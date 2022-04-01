@@ -1,13 +1,6 @@
 # bionic==18.04
 ARG DISTRO=bionic
 ARG GCC_MAJOR=11
-ARG CMAKE_VERSION=3.21.4
-ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz
-# storage.powerplant.pfr.co.nz has a self-signed certificate!
-ARG SPINNAKER_URL=https://storage.powerplant.pfr.co.nz/workspace/software_cache/flir/spinnaker-2.5.0.80-Ubuntu18.04-amd64-pkg.tar.gz
-ARG ARENA_URL=https://storage.powerplant.pfr.co.nz/workspace/software_cache/lucid/ArenaSDK_v0.1.57_Linux_x64.tar.gz
-ARG CHRONOPTICS_URL=https://storage.powerplant.pfr.co.nz/workspace/software_cache/chronoptic/tof-linux-x86_64.tar.gz
-ARG TEKNIC_URL=https://storage.powerplant.pfr.co.nz/workspace/software_cache/teknic/sFoundation.tar
 ARG MV_GENTL_URL=http://static.matrix-vision.com/mvIMPACT_Acquire/2.46.2/mvGenTL_Acquire-ARM64_gnu-2.46.2.tgz
 ARG MV_GENTL_INSTALL_URL=http://static.matrix-vision.com/mvIMPACT_Acquire/2.46.2/install_mvGenTL_Acquire_ARM.sh
 
@@ -40,7 +33,7 @@ ARG CMAKE_VERSION
 ARG APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 ARG DEBIAN_FRONTEND=noninteractive
 
-LABEL Description="Ubuntu ${DISTRO} - Gcc${GCC_MAJOR} + CMake ${CMAKE_VERSION}"
+LABEL Description="Ubuntu ${DISTRO} - Gcc${GCC_MAJOR} + CMake ${CMAKE_VERSION} + Python3.8"
 
 ENV \
     TZ=Pacific/Auckland \
@@ -66,8 +59,12 @@ RUN apt-get update --quiet \
     # Add modern cmake repository
     && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
     && apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
+    # Modern python
+    && add-apt-repository --yes ppa:deadsnakes/ppa \
     && apt-get update --quiet \
     && apt-get install --yes --quiet --no-install-recommends \
+        # Some tools still require gcc 7 builders (includes aarch64-linux-gnu-gcc)
+        build-essential \
         cmake \
         git \
         ninja-build \
@@ -80,91 +77,43 @@ RUN apt-get update --quiet \
     && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_MAJOR} 100 \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_MAJOR} 100 \
     && c++ --version \
+    # Python 3.8
+    && apt-get install --yes python3.8 python3.8-distutils python3.8-dev \
+    && wget https://bootstrap.pypa.io/get-pip.py \
+    && python3.8 get-pip.py \
     && apt-get --yes autoremove \
     && apt-get clean autoclean \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 
 
-FROM cmake-gcc as cmake-gcc-spinnaker-arena-opencv
-# Install all dependencies
+FROM cmake-gcc as mvIMPACT-dev
+# Get dependencies
 RUN apt-get update --quiet \
-    && apt-get install --yes --quiet --no-install-recommends \
-        # Spinnaker depenencies
-        libavcodec57 \
-        libavformat57 \
-        libswscale4 \
-        libswresample2 \
-        libavutil55 \
-        libraw1394-11 \
-        libusb-1.0-0 \
-        # Arena SDK dependencies
-        libncurses5-dev \
-        # Open CV
-        libopencv-dev \
-        python3-opencv \
-    && apt-get --yes autoremove \
-    && apt-get clean autoclean \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+    && apt-get install --yes \
+        # Can probably remove these if not wanting any GUI. Not sure if the GUI works yet
+        qt5-default \
+        libwxgtk3.0-gtk3-0v5 \
+        libwxgtk3.0-gtk3-dev \
+        libwxgtk-media3.0-gtk3-0v5 \
+        libwxgtk-media3.0-gtk3-dev \
+        libwxgtk-webview3.0-gtk3 \
+        libwxgtk-webview3.0-gtk3-dev \
+    && apt-get clean autoclean
 
-# Install cached spinnaker SDK
-# ARG SPINNAKER_URL
-# RUN mkdir -p /tmp/opt/spinnaker \
-#     && wget --no-check-certificate -qO - ${SPINNAKER_URL} | tar --strip-components=1 -xz -C /tmp/opt/spinnaker \
-#     && cd /tmp/opt/spinnaker \
-#     && dpkg -i lib*.deb || true \
-#     && echo "set libspinnaker/accepted-flir-eula true" | debconf-communicate \
-#     && dpkg -i lib*.deb \
-#     && cd / \ 
-#     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-
-# Download and unpack Arena SDK
-# ARG ARENA_URL
-# RUN mkdir -p /opt/src \
-#     && mkdir -p /opt/src/ArenaSDK \
-#     && wget --no-check-certificate -qO - ${ARENA_URL} | tar --strip-components=1 -xz -C /opt/src/ArenaSDK \
-#     # Install library load paths
-#     && cd /opt/src/ArenaSDK \
-#     && chmod +x Arena_SDK_Linux_x64.conf \
-#     && ./Arena_SDK_Linux_x64.conf \
-#     && cd /
-# ENV ARENA_ROOT="/opt/src/ArenaSDK"
-
-# Download and chronoptics SDK
-# ARG CHRONOPTICS_URL
-# RUN mkdir -p /opt/src \
-#     && mkdir -p /opt/src/chronoptics \
-#     && wget --no-check-certificate -qO - ${CHRONOPTICS_URL} | tar -xz -C /opt/src/chronoptics \
-#     # Install library load paths
-#     && touch /etc/ld.so.conf.d/Chronoptics.conf \
-#     && echo /opt/src/chronoptics/lib >> /etc/ld.so.conf.d/Chronoptics.conf
-# ENV CHRONOPTICS_ROOT="/opt/src/chronoptics"
-
-# Download and Teknic SDK
-# we have to build the library
-# ARG TEKNIC_URL
-# RUN mkdir -p /opt/src \
-#     && mkdir -p /opt/src/teknic \
-#     && wget --no-check-certificate -qO - ${TEKNIC_URL} | tar -x -C /opt/src/teknic \
-#     && cd /opt/src/teknic/sFoundation \
-#     && make \
-#     && ln -s /opt/src/teknic/sFoundation/libsFoundation20.so /opt/src/teknic/sFoundation/libsFoundation20.so.1 \
-#     && rm -rf build \
-#     # Install library load paths
-#     && touch /etc/ld.so.conf.d/teknic.conf \
-#     && echo /opt/src/teknic/sFoundation/ >> /etc/ld.so.conf.d/teknic.conf \
-#     && cd /
-# ENV TEKNIC_ROOT="/opt/src/teknic"
-
-# Download and unpack mvGenTL
+# Download and unpack mvIMPACT
 ARG MV_GENTL_URL
 ARG MV_GENTL_INSTALL_URL
-RUN mkdir -p /opt/src \
-    && mkdir -p /opt/src/mvGenTL \
-    && cd /opt/src/mvGenTL \
+RUN mkdir -p /opt/src/mvIMPACT \
+    && cd /opt/src/mvIMPACT \
     && wget --no-check-certificate -q ${MV_GENTL_URL} \
     && wget --no-check-certificate -qO install.sh ${MV_GENTL_INSTALL_URL} \
     # Install library load paths
     && chmod +x install.sh \
-    && ./install.sh --gev_support --u3v_support --unattended --minimal \
+    # Their script is not perfect and has a fair few errors...
+    && ./install.sh --gev_support --u3v_support --unattended\
+    # Build and install the python bindings
+    && cd /opt/mvIMPACT_Acquire/LanguageBindings/Python/ \
+    && MVIMPACT_ACQUIRE_DIR=/opt/mvIMPACT_Acquire python3.8 setup.py bdist_wheel \
+    && MVIMPACT_ACQUIRE_DIR=/opt/mvIMPACT_Acquire python3.8 -m pip install Output/mvIMPACT*.whl \
     && cd /
-ENV MV_GENTL_ROOT="/opt/src/mvGenTL"
+ENV MVIMPACT_ACQUIRE_DIR=/opt/mvIMPACT_Acquire
