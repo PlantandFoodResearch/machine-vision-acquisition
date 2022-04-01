@@ -101,6 +101,9 @@ RUN mkdir -p /opt/src \
         libgstreamer-plugins-base1.0-dev \
         libgstreamer-plugins-good1.0-dev \
         libgstreamer-plugins-bad1.0-dev \
+        gstreamer1.0-plugins-base \
+        gstreamer1.0-plugins-good \
+        gstreamer1.0-plugins-bad \
         gstreamer1.0-plugins-ugly \
         libgirepository1.0-dev \
         ninja-build \
@@ -116,4 +119,6 @@ RUN mkdir -p /opt/src/aravis \
     && cd build \
     && ninja \
     && ninja install \
+    && echo "/usr/local/lib/aarch64-linux-gnu" >> /etc/ld.so.conf.d/aarch64-linux-gnu.conf \
+    && ldconfig \
     && cd /
