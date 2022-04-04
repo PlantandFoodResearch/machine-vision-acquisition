@@ -1,0 +1,18 @@
+version: '3.6'
+
+services:
+  base:
+    build:
+      dockerfile: builder.dockerfile
+      context: ./docker
+      target: cmake-gcc
+  aravis:
+    build:
+      dockerfile: builder.dockerfile
+      context: ./docker
+      target: aravis-dev
+  mvIMPACT:
+      build:
+        dockerfile: builder.dockerfile
+        context: ./docker
+        target: mvIMPACT-dev
