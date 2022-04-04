@@ -11,7 +11,7 @@ services:
       dockerfile: builder.dockerfile
       context: ./docker
       target: aravis-dev
-  mvIMPACT:
+  mvimpact:
       build:
         dockerfile: builder.dockerfile
         context: ./docker
