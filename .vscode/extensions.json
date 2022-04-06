@@ -2,6 +2,7 @@
     "recommendations": [
         "ms-vscode.cpptools",
         "ms-vscode.cpptools-extension-pack",
+        "ms-azuretools.vscode-docker",
         "ms-python.python"
     ]
 }
