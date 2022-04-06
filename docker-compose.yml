@@ -7,12 +7,31 @@ services:
       context: ./docker
       target: cmake-gcc
   aravis:
+    network_mode: "host"
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
     build:
       dockerfile: builder.dockerfile
       context: ./docker
       target: aravis-dev
+    command: ["sleep", "infinity"]
   mvimpact:
-      build:
-        dockerfile: builder.dockerfile
-        context: ./docker
-        target: mvIMPACT-dev
+    network_mode: "host"
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: builder.dockerfile
+      context: ./docker
+      target: mvIMPACT-dev
+  aravis-deb:
+    network_mode: "host"
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: aravis.dockerfile
+      context: ./docker
+    volumes:
+      - .:/src

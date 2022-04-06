@@ -63,7 +63,7 @@ RUN apt-get install -y \
     apt autoremove -y && \
     rm -rf /var/cache/apt /var/lib/apt/lists
 
-COPY ./build/ubuntu-run.sh /usr/bin/
+COPY ./xrdp_files/ubuntu-run.sh /usr/bin/
 RUN mv /usr/bin/ubuntu-run.sh /usr/bin/run.sh && chmod +x /usr/bin/run.sh
 
 # https://github.com/danielguerra69/ubuntu-xrdp/blob/master/Dockerfile
@@ -73,10 +73,11 @@ RUN mkdir /var/run/dbus && \
     sed -i "s/xrdp\/xorg/xorg/g" /etc/xrdp/sesman.ini && \
     echo "xfce4-session" >> /etc/skel/.Xsession
 
-
 # Docker config
 EXPOSE 3389
-ENTRYPOINT ["/usr/bin/run.sh"]
+ENTRYPOINT [ "/usr/bin/run.sh" ]
+CMD [ "user", "user", "yes" ]
+# CMD ["bash", "-c", "xrdp-sesman && xrdp -n"]
 
 # Possible other
 # apt-get install --yes
