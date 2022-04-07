@@ -9,7 +9,7 @@ find_package(Threads REQUIRED)
 
 include($ENV{MVIMPACT_ACQUIRE_DIR}/mvIMPACT_AcquireConfig.cmake)
 
-add_executable(testmvaqcuire examples/main.cpp)
+add_executable(testmvaqcuire main.cpp)
 target_link_libraries(testmvaqcuire PRIVATE ${mvIMPACT_Acquire_LIBRARIES} Threads::Threads)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
