@@ -76,16 +76,24 @@ for i in range(framesToCapture):
                 display.GetImageDisplay().SetImage(pRequest)
                 display.GetImageDisplay().Update()
             # For systems with NO mvDisplay library support
-            cbuf = (ctypes.c_char * pRequest.imageSize.read()).from_address(int(pRequest.imageData.read()))
-            channelType = np.uint16 if pRequest.imageChannelBitDepth.read() > 8 else np.uint8
-            arr = np.frombuffer(cbuf, dtype = channelType)
+            cbuf = (ctypes.c_char * pRequest.imageSize.read()).from_address(
+                int(pRequest.imageData.read())
+            )
+            channelType = (
+                np.uint16 if pRequest.imageChannelBitDepth.read() > 8 else np.uint8
+            )
+            arr = np.frombuffer(cbuf, dtype=channelType)
             channelCount = pRequest.imageChannelCount.read()
-            arr.shape = (pRequest.imageHeight.read(), pRequest.imageWidth.read(), channelCount + 1)  # alpha
+            arr.shape = (
+                pRequest.imageHeight.read(),
+                pRequest.imageWidth.read(),
+                channelCount + 1,
+            )  # alpha
 
             if channelCount == 1:
-               img = Image.fromarray(arr)
+                img = Image.fromarray(arr)
             else:
-               img = Image.fromarray(arr, 'RGBA' if alpha else 'RGB')
+                img = Image.fromarray(arr, "RGBA" if alpha else "RGB")
             img.save("test.png")
         if pPreviousRequest != None:
             pPreviousRequest.unlock()
