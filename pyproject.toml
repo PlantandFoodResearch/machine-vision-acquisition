@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "machine_vision_acquisition_python"
+version = "0.1.0"
+description = "PFR library for machine vision interfacing"
+authors = ["Manu Lange <manu.lange@plantandfood.co.nz>"]
+packages = [
+    { include = "machine_vision_acquisition_python", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+opencv-python = "^4.5.5"
+click = "^8.1.2"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

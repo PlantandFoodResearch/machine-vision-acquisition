@@ -1,2 +1,4 @@
+click
 opencv-python
-harvesters
+poetry
+# harvesters
