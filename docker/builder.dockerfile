@@ -128,6 +128,18 @@ RUN mkdir -p /opt/src/aravis \
     && ldconfig \
     && cd /
 
+RUN python3.8 -m pip install -U pip setuptools wheel \
+    # needs --ignore-installed because python3.6 interferes
+    && python3.8 -m pip install --ignore-installed -U PyGObject pycairo PyGObject-stubs \
+    && python3.8 -m pip install -U opencv-python \
+    && mkdir -p /usr/lib/girepository-1.0/ \
+    && ln -s /usr/local/lib/x86_64-linux-gnu/girepository-1.0/Aravis-0.8.typelib /usr/lib/girepository-1.0/ \
+    # Generate python stubs
+    && wget -qO - https://raw.githubusercontent.com/pygobject/pygobject-stubs/master/tools/generate.py | \
+    python3.8 - Aravis 0.8 >> /usr/local/lib/python3.8/dist-packages/gi-stubs/repository/Aravis.pyi
+
+WORKDIR /src
+USER vscode
 CMD [ "bash", "-l"]
 
 
@@ -153,3 +165,7 @@ RUN mkdir -p /opt/src/mvIMPACT \
     && MVIMPACT_ACQUIRE_DIR=/opt/mvIMPACT_Acquire python3.8 -m pip install Output/mvIMPACT*.whl \
     && cd /
 ENV MVIMPACT_ACQUIRE_DIR=/opt/mvIMPACT_Acquire
+
+WORKDIR /src
+USER vscode
+CMD [ "bash", "-l"]
