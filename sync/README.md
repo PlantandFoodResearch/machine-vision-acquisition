@@ -11,4 +11,6 @@ mkdir /etc/lsyncd
 touch /etc/lsyncd/lsyncd.conf.lua
 # Contents should be like the example, but modified to suit
 systemctl enable lsyncd && systemctl restart lsyncd
+# Watch progress / triggers:
+journalctl -f -t lsyncd
 ```

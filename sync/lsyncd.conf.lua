@@ -15,6 +15,7 @@ sync {
         compress = true,
         chown = "cfnmxl:powerplant",
         prune_empty_dirs = true,
+        -- This needs to be a valid key, not encrypted for now
         rsh = "/usr/bin/ssh -i /home/user/.ssh/mflange-edge-fops.nopass.key -oStrictHostKeyChecking=no -l cfnmxl",
         -- # Remove source files
         _extra = { "--remove-source-files" }
