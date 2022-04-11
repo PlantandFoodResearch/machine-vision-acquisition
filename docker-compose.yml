@@ -16,6 +16,8 @@ services:
       context: ./docker
       target: aravis-dev
     command: ["sleep", "infinity"]
+    volumes:
+      - .:/src
   mvimpact:
     network_mode: "host"
     environment:
@@ -25,6 +27,8 @@ services:
       dockerfile: builder.dockerfile
       context: ./docker
       target: mvIMPACT-dev
+    volumes:
+      - .:/src
   aravis-deb:
     network_mode: "host"
     environment:
