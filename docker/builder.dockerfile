@@ -110,6 +110,8 @@ RUN mkdir -p /opt/src \
         gstreamer1.0-plugins-good \
         gstreamer1.0-plugins-bad \
         gstreamer1.0-plugins-ugly \
+        gstreamer1.0-gtk3 \
+        dbus-x11 \
         libgirepository1.0-dev \
         # Probably already installed, but better safe than sorry
         ninja-build \
