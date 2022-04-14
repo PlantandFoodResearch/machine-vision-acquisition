@@ -138,7 +138,13 @@ class CameraHelper():
     default=Path("./tmp/"),
     type=click.Path(file_okay=False, resolve_path=True),
 )
-def cli(name: str, all: bool, out_dir):
+@click.option(
+    "--factory-reset",
+    help="Performs a factory reset only and then exits",
+    default=False,
+    is_flag=True,
+)
+def cli(name: str, all: bool, out_dir, factory_reset: bool):
     """
     Simple camera snapshot grabber and saver.
     Hotkeys:\n
@@ -163,7 +169,15 @@ def cli(name: str, all: bool, out_dir):
                 raise exc
             cameras.append(camera)
         # cameras = [CameraHelper(name=None) for i in range(Aravis.get_n_devices())]
-
+    if factory_reset:
+        for camera in cameras:
+            try:
+                camera.camera.execute_command("DeviceFactoryReset")
+                log.info(f"DeviceFactoryReset {camera.name}")
+            except Exception as exc:
+                log.exception(f"Failed to reset {camera.name}", exc_info=exc)
+                pass  # best effort
+        return
     # Create the windows
     for camera in cameras:
         cv2.namedWindow(f"{camera.name}", cv2.WINDOW_NORMAL)
