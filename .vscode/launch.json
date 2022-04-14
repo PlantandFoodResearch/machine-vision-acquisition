@@ -9,6 +9,7 @@
             "type": "python",
             "request": "launch",
             "module": "machine_vision_acquisition_python.viewer",
+            "args": ["--all"],
             "justMyCode": true
         }
     ]
