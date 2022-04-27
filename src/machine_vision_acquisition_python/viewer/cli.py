@@ -39,7 +39,7 @@ def convert(buf) -> typing.Optional[cv2.Mat]:
 
 
 def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:
-    image_f32 = image.astype(np.uint8)
+    image_f32 = image.astype(np.float32)
     tonemap = cv2.createTonemapReinhard()
     image_f32_tonemap  = tonemap.process(image_f32)
     image_uint8 = np.uint8(np.clip(image_f32_tonemap  * 255, 0, 255))  # clip back to uint8
@@ -109,7 +109,7 @@ class CameraHelper():
             if not buffer:
                 raise TimeoutError("Failed to get an image from the camera")
             image = convert(buffer)
-            if not image:
+            if not image.any():
                 raise TimeoutError("Failed to convert buffer to image")
             self.stream.push_buffer(buffer)  # push buffer back into stream
             self.cached_image = image  # Cache the raw image for optional saving
@@ -207,8 +207,9 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
                 pass  # best effort
         return
     # Create the windows
-    for camera in cameras:
-        cv2.namedWindow(f"{camera.name}", cv2.WINDOW_NORMAL)
+    if DISPLAY:
+        for camera in cameras:
+            cv2.namedWindow(f"{camera.name}", cv2.WINDOW_NORMAL)
 
     try:
         snap_counter = 0
@@ -241,7 +242,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
                         break
                     file_path = out_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
                     image = camera.cached_image
-                    if ch == ord("t"):
+                    if ch == "t":
                         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
                         image = cvt_tonemap_image(image)
                         file_path = out_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
