@@ -2,6 +2,7 @@ import click
 import logging
 import cv2
 import time
+import os
 import typing
 import numpy as np
 from pathlib import Path
@@ -169,6 +170,14 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
     """
     out_dir = Path(out_dir).resolve()  # Resolve and cast to Path
     out_dir.mkdir(exist_ok=True)
+
+    # Check display aspects
+    if os.name == 'posix' and "DISPLAY" in os.environ:
+        DISPLAY = True
+    else:
+        # Don't support windows at this stage
+        DISPLAY = False
+
     cameras: typing.List[CameraHelper] = []
     if all:
         # Open all cameras
@@ -204,15 +213,24 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
     try:
         snap_counter = 0
         while True:
-            ch = cv2.waitKey(10) & 0xFF
-            if ch == 27 or ch == ord("q"):
+            if DISPLAY:
+                ch = cv2.waitKey(10) & 0xFF
+                if ch == 27:
+                    ch = "q"
+                else:
+                    ch = chr(ch)  # Convert to char
+            else:
+                ch = click.prompt("Please enter a command", type=click.types.STRING, show_choices=click.Choice(["n", "s", "t", "q"]))
+            if ch == "q":
                 break
-            elif ch == ord("n"):
+            elif ch == "n":
                 # Capture new image from all cameras
                 for camera in cameras:
                     image = camera.get_single_image()
+                    if not DISPLAY:
+                        continue
                     cv2.imshow(f"{camera.name}", image)
-            elif ch == ord("s") or ch == ord("t"):
+            elif ch == "s" or ch == "t":
                 # save currently displaying image image
                 # BUG: OpenCV cannot save 12b images (https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html#gabbc7ef1aa2edfaa87772f1202d67e0ce)
                 # TODO: We must do the conversion ourselves :)
