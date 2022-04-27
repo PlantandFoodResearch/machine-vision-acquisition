@@ -3,6 +3,7 @@ import logging
 import cv2
 import time
 import typing
+import numpy as np
 from pathlib import Path
 from timeit import default_timer as timer
 
@@ -19,7 +20,7 @@ import ctypes
 import numpy as np
 
 
-def convert(buf):
+def convert(buf) -> typing.Optional[cv2.Mat]:
     ### Credit: https://github.com/SintefRaufossManufacturing/python-aravis/blob/master/aravis.py#L181
     if not buf:
         return None
@@ -35,6 +36,13 @@ def convert(buf):
     im = im.copy()
     return im
 
+
+def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:
+    image_f32 = image.astype(np.uint8)
+    tonemap = cv2.createTonemapReinhard()
+    image_f32_tonemap  = tonemap.process(image_f32)
+    image_uint8 = np.uint8(np.clip(image_f32_tonemap  * 255, 0, 255))  # clip back to uint8
+    return image_uint8  # type: ignore
 
 def resize_with_aspect_ratio(
     image,
@@ -82,6 +90,7 @@ class CameraHelper():
         self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
         self.camera.set_pixel_format(Aravis.PIXEL_FORMAT_BAYER_RG_12)
         self.camera.set_frame_rate(1)
+        # self.camera.set_exposure_time(1000)
 
         self.camera.set_trigger("Software")
 
@@ -99,10 +108,15 @@ class CameraHelper():
             if not buffer:
                 raise TimeoutError("Failed to get an image from the camera")
             image = convert(buffer)
+            if not image:
+                raise TimeoutError("Failed to convert buffer to image")
             self.stream.push_buffer(buffer)  # push buffer back into stream
             self.cached_image = image  # Cache the raw image for optional saving
             self.cached_image_time = time.strftime("%Y-%m-%dT%H%M%S")
+
             image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+            image = cvt_tonemap_image(image)
+
             image = resize_with_aspect_ratio(image, width=640)
             end = timer()
             log.debug(f"Acquiring image for {self.name} took: {end - start}")
@@ -151,6 +165,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
     * 'q' to exit\n
     * 'n' to grab new frames from cameras (software triggered, not synchronised)\n
     * 's' to save the displayed frame (as non-processed BayerRG12 PNG)\n
+    * 't' to save the displayed frame (as tonemapped RGB PNG)\n
     """
     out_dir = Path(out_dir).resolve()  # Resolve and cast to Path
     out_dir.mkdir(exist_ok=True)
@@ -169,6 +184,10 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
                 raise exc
             cameras.append(camera)
         # cameras = [CameraHelper(name=None) for i in range(Aravis.get_n_devices())]
+
+    if not cameras:
+        log.warning("Could not open any cameras, exiting!")
+        return
     if factory_reset:
         for camera in cameras:
             try:
@@ -193,15 +212,22 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
                 for camera in cameras:
                     image = camera.get_single_image()
                     cv2.imshow(f"{camera.name}", image)
-            elif ch == ord("s"):
+            elif ch == ord("s") or ch == ord("t"):
                 # save currently displaying image image
+                # BUG: OpenCV cannot save 12b images (https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html#gabbc7ef1aa2edfaa87772f1202d67e0ce)
+                # TODO: We must do the conversion ourselves :)
                 snap_counter += 1
                 for camera in cameras:
                     if camera.cached_image is None or camera.cached_image_time is None:
                         log.warning("Cannot save image yet, none cached!")
                         break
                     file_path = out_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
-                    cv2.imwrite(str(file_path), camera.cached_image)
+                    image = camera.cached_image
+                    if ch == ord("t"):
+                        image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+                        image = cvt_tonemap_image(image)
+                        file_path = out_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
+                    cv2.imwrite(str(file_path), image)
                     log.debug(f"Saved {file_path}")
     except SystemExit as _:
         pass  # CTRL-C
