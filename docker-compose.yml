@@ -7,6 +7,7 @@ services:
       context: ./docker
       target: cmake-gcc
   aravis:
+    restart: always
     network_mode: "host"
     environment:
       - DISPLAY
@@ -18,6 +19,7 @@ services:
     command: ["sleep", "infinity"]
     volumes:
       - .:/src
+      - workspace:/home/vscode/workspace
   mvimpact:
     network_mode: "host"
     environment:
@@ -29,7 +31,9 @@ services:
       target: mvIMPACT-dev
     volumes:
       - .:/src
+      - workspace:/home/vscode/workspace
   aravis-deb:
+    restart: always
     network_mode: "host"
     environment:
       - DISPLAY
@@ -39,3 +43,7 @@ services:
       context: ./docker
     volumes:
       - .:/src
+      - workspace:/workspace
+
+volumes:
+  workspace:
