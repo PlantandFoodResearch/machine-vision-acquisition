@@ -71,10 +71,11 @@ RUN mkdir /var/run/dbus && \
     cp /etc/X11/xrdp/xorg.conf /etc/X11 && \
     sed -i "s/console/anybody/g" /etc/X11/Xwrapper.config && \
     sed -i "s/xrdp\/xorg/xorg/g" /etc/xrdp/sesman.ini && \
+    sed -i "s/port=.*/port=13389/" /etc/xrdp/xrdp.ini && \
     echo "xfce4-session" >> /etc/skel/.Xsession
 
 # Docker config
-EXPOSE 3389
+EXPOSE 13389
 ENTRYPOINT [ "/usr/bin/run.sh" ]
 CMD [ "user", "user", "yes" ]
 # CMD ["bash", "-c", "xrdp-sesman && xrdp -n"]
