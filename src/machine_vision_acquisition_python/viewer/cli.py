@@ -8,8 +8,10 @@ import numpy as np
 from pathlib import Path
 from timeit import default_timer as timer
 
+
 log = logging.getLogger(__name__)
 
+DISPLAY_SIZE_WIDTH = 1280
 
 # temp
 import gi
@@ -118,7 +120,7 @@ class CameraHelper():
         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
         image = cvt_tonemap_image(image)
 
-        image = resize_with_aspect_ratio(image, width=640)
+        image = resize_with_aspect_ratio(image, width=DISPLAY_SIZE_WIDTH)
         end = timer()
         log.debug(f"Acquiring image for {self.name} took: {end - start}")
         return image
@@ -139,6 +141,13 @@ class CameraHelper():
     default=None,
 )
 @click.option(
+    "--tof",
+    "-t",
+    help="Attempt to use Chronoptics camera",
+    default=True,
+    type=bool
+)
+@click.option(
     "--all",
     help="Open all cameras at once",
     default=False,
@@ -157,7 +166,7 @@ class CameraHelper():
     default=False,
     is_flag=True,
 )
-def cli(name: str, all: bool, out_dir, factory_reset: bool):
+def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
     """
     Simple camera snapshot grabber and saver.
     Hotkeys:\n
@@ -187,8 +196,15 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
             except Exception as exc:
                 # Ignore non-compliant cameras (Chronoptics)
                 if "arv-device-error-quark" in str(exc):
-                    continue
-                raise exc
+                    if tof:
+                        # Attempt to get with ToF Handler
+                        from machine_vision_acquisition_python.viewer.tof import ToFCameraHelper
+                        serial = Aravis.get_device_serial_nbr(0)
+                        camera = ToFCameraHelper(serial)
+                    else:
+                        continue
+                else:
+                    raise exc
             cameras.append(camera)
         # cameras = [CameraHelper(name=None) for i in range(Aravis.get_n_devices())]
 
@@ -235,17 +251,21 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
                 # TODO: We must do the conversion ourselves :)
                 snap_counter += 1
                 for camera in cameras:
+                    camera_dir = out_dir / camera.name
+                    camera_dir.mkdir(exist_ok=True)
                     if camera.cached_image is None or camera.cached_image_time is None:
                         log.warning("Cannot save image yet, none cached!")
                         break
-                    file_path = out_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
+                    file_path = camera_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
                     image = camera.cached_image
-                    if ch == "t":
+                    if ch == "t" and (tof and not isinstance(camera, ToFCameraHelper)):
                         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
-                        image = resize_with_aspect_ratio(image, width=1920)
-                        image = image[0:1200, 0:1920]
+                        # image = resize_with_aspect_ratio(image, width=1920)
+                        # image_height = image.shape[0]
+                        # image_cut = round((image_height - 1200) / 2)  ##crop center of sensor, else there is an offset in calculations.
+                        # image = image[image_cut:1200+image_cut, 0:1920]
                         image = cvt_tonemap_image(image)
-                        file_path = out_dir / camera.name / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
+                        file_path = camera_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
                     file_path.parent.mkdir(exist_ok=True)
                     if cv2.imwrite(str(file_path), image):
                         log.debug(f"Saved {file_path}")
@@ -254,7 +274,12 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
     finally:
         for camera in cameras:
             try:
-                camera.camera.stop_acquisition()
+                if tof:
+                    from machine_vision_acquisition_python.viewer.tof import ToFCameraHelper
+                    if isinstance(camera, ToFCameraHelper):
+                        camera.camera.stop()
+                else:
+                    camera.camera.stop_acquisition()
             except Exception as _:
                 log.debug(f"Failed to stop {camera.name}")
         Aravis.shutdown()
