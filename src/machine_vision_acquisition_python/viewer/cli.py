@@ -244,10 +244,13 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
                     image = camera.cached_image
                     if ch == "t":
                         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+                        image = resize_with_aspect_ratio(image, width=1920)
+                        image = image[0:1200, 0:1920]
                         image = cvt_tonemap_image(image)
-                        file_path = out_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
-                    cv2.imwrite(str(file_path), image)
-                    log.debug(f"Saved {file_path}")
+                        file_path = out_dir / camera.name / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
+                    file_path.parent.mkdir(exist_ok=True)
+                    if cv2.imwrite(str(file_path), image):
+                        log.debug(f"Saved {file_path}")
     except SystemExit as _:
         pass  # CTRL-C
     finally:
