@@ -98,31 +98,29 @@ class CameraHelper():
         self.stream: Aravis.Stream = self.camera.create_stream(None, None)
         payload = self.camera.get_payload()
         self.stream.push_buffer(Aravis.Buffer.new_allocate(payload))
+        self.camera.start_acquisition()
+
 
     def get_single_image(self):
         """Acquire and cache a single image"""
-        self.camera.start_acquisition()
-        try:
-            start = timer()
-            self.camera.software_trigger()
-            buffer = self.stream.timeout_pop_buffer(1 * 1000 * 1000)  # 1 second
-            if not buffer:
-                raise TimeoutError("Failed to get an image from the camera")
-            image = convert(buffer)
-            if not image.any():
-                raise TimeoutError("Failed to convert buffer to image")
-            self.stream.push_buffer(buffer)  # push buffer back into stream
-            self.cached_image = image  # Cache the raw image for optional saving
-            self.cached_image_time = time.strftime("%Y-%m-%dT%H%M%S")
+        start = timer()
+        self.camera.software_trigger()
+        buffer = self.stream.timeout_pop_buffer(1 * 1000 * 1000)  # 1 second
+        if not buffer:
+            raise TimeoutError("Failed to get an image from the camera")
+        image = convert(buffer)
+        if not image.any():
+            raise ValueError("Failed to convert buffer to image")
+        self.stream.push_buffer(buffer)  # push buffer back into stream
+        self.cached_image = image  # Cache the raw image for optional saving
+        self.cached_image_time = time.strftime("%Y-%m-%dT%H%M%S")
 
-            image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
-            image = cvt_tonemap_image(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+        image = cvt_tonemap_image(image)
 
-            image = resize_with_aspect_ratio(image, width=640)
-            end = timer()
-            log.debug(f"Acquiring image for {self.name} took: {end - start}")
-        finally:
-            self.camera.stop_acquisition()
+        image = resize_with_aspect_ratio(image, width=640)
+        end = timer()
+        log.debug(f"Acquiring image for {self.name} took: {end - start}")
         return image
 
     def get_last_image(self):
@@ -254,6 +252,11 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool):
     except SystemExit as _:
         pass  # CTRL-C
     finally:
+        for camera in cameras:
+            try:
+                camera.camera.stop_acquisition()
+            except Exception as _:
+                log.debug(f"Failed to stop {camera.name}")
         Aravis.shutdown()
         cv2.destroyAllWindows()
 
