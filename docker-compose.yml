@@ -44,6 +44,19 @@ services:
     volumes:
       - .:/src
       - workspace:/workspace
+  multi-sdk:
+    restart: always
+    network_mode: "host"
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: multi-sdk.dockerfile
+      context: ./docker
+    command: ["sleep", "infinity"]
+    volumes:
+      - .:/src
+      - workspace:/home/vscode/workspace
 
 volumes:
   workspace:
