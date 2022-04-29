@@ -78,3 +78,9 @@ DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu
 DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu/2022-04-14T164139-TRI023S-C-213902307-snapshot-1.png
 DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu/2022-04-14T164139-TRI023S-C-213902309-snapshot-1.png
 ```
+
+### Chronoptics ToF Camera viewer
+Mainly in [tof.py](./src/machine_vision_acquisition_python/viewer/tof.py). View CLI help for info:
+```
+python3.8 -m machine_vision_acquisition_python.viewer.tof --help
+```

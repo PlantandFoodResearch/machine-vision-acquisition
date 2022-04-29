@@ -258,12 +258,18 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                         break
                     file_path = camera_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
                     image = camera.cached_image
-                    if ch == "t" and (tof and not isinstance(camera, ToFCameraHelper)):
+                    if tof and isinstance(camera, ToFCameraHelper):
+                        # We handle this camera specially, since it is two cameras...
+                        image_intensity = camera.get_normalised_intensity()
+                        if image_intensity is not None:
+                            # Save intensity image as a seperate camera
+                            camera_dir_intensity = out_dir / f"{camera.name}-intensity"
+                            file_path_intensity = camera_dir_intensity / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
+                            camera_dir_intensity.mkdir(exist_ok=True)
+                            if cv2.imwrite(str(file_path_intensity), image_intensity):
+                                log.debug(f"Saved {file_path_intensity}")
+                    elif ch == "t":
                         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
-                        # image = resize_with_aspect_ratio(image, width=1920)
-                        # image_height = image.shape[0]
-                        # image_cut = round((image_height - 1200) / 2)  ##crop center of sensor, else there is an offset in calculations.
-                        # image = image[image_cut:1200+image_cut, 0:1920]
                         image = cvt_tonemap_image(image)
                         file_path = camera_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
                     file_path.parent.mkdir(exist_ok=True)
@@ -284,47 +290,6 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                 log.debug(f"Failed to stop {camera.name}")
         Aravis.shutdown()
         cv2.destroyAllWindows()
-
-    # try:
-    #     camera: Aravis.Camera = Aravis.Camera.new(name)
-    # except Exception as exc:
-    #     log.exception("Could not open camera")
-    #     raise exc
-    # log.info(f"Opened {camera.get_model_name()} {camera.get_device_serial_number()}")
-    # camera.gv_set_packet_size_adjustment(Aravis.GvPacketSizeAdjustment.ON_FAILURE)
-    # camera.gv_set_packet_size(camera.gv_auto_packet_size())
-    # camera.set_frame_rate(1)
-    # camera.set_trigger("Software")
-    # stream = camera.create_stream(None, None)
-    # payload = camera.get_payload()
-
-    # # Ensure we have frames to buffer
-    # for i in range(0, 1):
-    #     stream.push_buffer(Aravis.Buffer.new_allocate(payload))
-
-    # log.info("starting acquisition")
-    # camera.start_acquisition()
-    # try:
-    #     cv2.namedWindow("frame")
-    #     while True:
-    #         start = timer()
-    #         ch = cv2.waitKey(10) & 0xFF
-    #         if ch == 27 or ch == ord("q"):
-    #             break
-    #         elif ch == ord("n"):
-    #             # cv2.imwrite("imagename.png", image)
-    #             buffer = stream.try_pop_buffer()
-    #             if buffer:
-    #                 image = convert(buffer)
-    #                 stream.push_buffer(buffer)  # push buffer back into stream
-    #                 image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
-    #                 image = resize_with_aspect_ratio(image, width=640)
-    #                 cv2.imshow("frame", image)
-    #                 end = timer()
-    #                 log.debug(f"Display time: {end - start}")
-    # finally:
-    #     camera.stop_acquisition()
-    #     cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

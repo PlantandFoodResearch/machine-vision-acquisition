@@ -11,6 +11,18 @@
             "module": "machine_vision_acquisition_python.viewer",
             "args": ["--all"],
             "justMyCode": true
+        },
+        {
+            "name": "Python: TOF viewer",
+            "type": "python",
+            "request": "launch",
+            "module": "machine_vision_acquisition_python.viewer.tof",
+            "args": ["--serial", "2020029"],
+            "env": {
+                "DISPLAY": "localhost:10.0",
+                "LIBGL_ALWAYS_INDIRECT": "1"
+            },
+            "justMyCode": true
         }
     ]
 }
