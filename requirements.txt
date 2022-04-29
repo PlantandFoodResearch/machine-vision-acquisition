@@ -1,4 +1,9 @@
 click
 opencv-python
 poetry
+# Chronoptics Examples
+matplotlib
+scipy
+tk-tools
+# sudo apt install python3.8-tk
 # harvesters
