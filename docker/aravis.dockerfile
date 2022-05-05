@@ -20,6 +20,9 @@ RUN apt-get update \
         gstreamer1.0-plugins-good \
         gstreamer1.0-plugins-bad \
         gstreamer1.0-plugins-ugly \
+        gstreamer1.0-gtk3 \
+        # Other packages for aravis
+        dbus-x11 \
         # Python GObject: https://pygobject.readthedocs.io/en/latest/getting_started.html
         libgirepository1.0-dev \
         libcairo2-dev \
