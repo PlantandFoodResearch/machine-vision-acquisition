@@ -20,6 +20,22 @@ services:
     volumes:
       - .:/src
       - workspace:/home/vscode/workspace
+  aravis-pi:
+    restart: always
+    network_mode: "host"
+    devices:
+     - "/dev/bus/usb:/dev/bus/usb"  # All USB devices
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: builder.rpi.dockerfile
+      context: ./docker
+      target: aravis-dev
+    command: ["sleep", "infinity"]
+    volumes:
+      - .:/src
+      - workspace:/home/vscode/workspace
   mvimpact:
     network_mode: "host"
     environment:
