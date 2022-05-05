@@ -120,10 +120,10 @@ RUN python3 -m pip install -U pip setuptools wheel \
     # Installing from pip attempts to build many things from source and this struggles on the Raspberry Pi (cv2, numpy, cmake,...)
     && apt-get install --yes python3-opencv python3-numpy \
     && mkdir -p /usr/lib/girepository-1.0/ \
-    && ln -s /usr/local/lib/$(arch)-linux-gnu/girepository-1.0/Aravis-0.8.typelib /usr/lib/girepository-1.0/ \
+    && ln -s $(find /usr/local/lib/ -type f -name "Aravis-0.8.typelib") /usr/lib/girepository-1.0/ \
     # Generate python stubs
     && wget -qO - https://raw.githubusercontent.com/pygobject/pygobject-stubs/master/tools/generate.py | \
-    python3 - Aravis 0.8 >> /usr/local/lib/python3.9/dist-packages/gi-stubs/repository/Aravis.pyi
+    python3 - Aravis 0.8 >> $(python3 -c 'import site; print(site.getsitepackages()[0])')/gi-stubs/repository/Aravis.pyi
 
 WORKDIR /src
 USER vscode
