@@ -16,9 +16,10 @@ services:
       dockerfile: builder.dockerfile
       context: ./docker
       target: aravis-dev
-    command: ["sleep", "infinity"]
+    command: [ "bash", "-c", "python3 -m pip install -e . && sleep infinity"]
     volumes:
       - .:/src
+      - ${POWERPLANT_SINK_DIR:-output}:/output/
       - workspace:/home/vscode/workspace
   aravis-pi:
     restart: always
@@ -32,9 +33,10 @@ services:
       dockerfile: builder.rpi.dockerfile
       context: ./docker
       target: aravis-dev
-    command: ["sleep", "infinity"]
+    command: [ "bash", "-c", "python3 -m pip install -e . && sleep infinity"]
     volumes:
       - .:/src
+      - ${POWERPLANT_SINK_DIR:-output}:/output/
       - workspace:/home/vscode/workspace
   mvimpact:
     network_mode: "host"
@@ -59,6 +61,7 @@ services:
       context: ./docker
     volumes:
       - .:/src
+      - ${POWERPLANT_SINK_DIR:-output}:/output/
       - workspace:/workspace
   multi-sdk:
     restart: always
@@ -69,10 +72,12 @@ services:
     build:
       dockerfile: multi-sdk.dockerfile
       context: ./docker
-    command: ["sleep", "infinity"]
+    command: [ "bash", "-c", "python3 -m pip install -e . && sleep infinity"]
     volumes:
       - .:/src
+      - ${POWERPLANT_SINK_DIR:-output}:/output/
       - workspace:/home/vscode/workspace
 
 volumes:
   workspace:
+  output:

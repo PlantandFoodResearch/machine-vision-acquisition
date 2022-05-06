@@ -11,6 +11,14 @@ The Aravis development environment has two main flavors:
 * `aravis` Built from source
 * `aravis-deb` Debian package installed
 
+### Output Volume
+The containers will mount the value of the environment variable `POWERPLANT_SINK_DIR` to `/output`. This will default to a named volume `output` if not defined or empty. To use this follow the example:
+```bash
+# Setup lsyncd or other syncrhonising on host at a specific point. E.g. "/media/powerplant-sink/"
+export POWERPLANT_SINK_DIR=/media/powerplant-sink/
+docker compose up -d aravis
+```
+
 ## GenICam Interfaces & SDKs
 Whilst it is generally best to look directly at the vendor's documentation, these sections attempt to capture some tips and tricks.
 
@@ -84,3 +92,8 @@ Mainly in [tof.py](./src/machine_vision_acquisition_python/viewer/tof.py). View 
 ```
 python3.8 -m machine_vision_acquisition_python.viewer.tof --help
 ```
+
+# Troubleshooting & FAQ
+
+### Can't see USB3 camera?
+Often you must use `sudo -E` to access USB devices. Try this first.
