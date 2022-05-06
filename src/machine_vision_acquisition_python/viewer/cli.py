@@ -12,6 +12,12 @@ from timeit import default_timer as timer
 log = logging.getLogger(__name__)
 
 DISPLAY_SIZE_WIDTH = 1280
+PIXEL_FORMAT_PREFERENCE_LIST = [
+    "BayerRG12",
+    "BayerRG12Packed",
+    "BayerRG16",
+    "BayerRG8",
+]
 
 # temp
 import gi
@@ -23,21 +29,49 @@ import ctypes
 import numpy as np
 
 
+def unpack_BayerRG12Packed(aravis_buffer):
+    # Motivation / Credit: https://stackoverflow.com/a/70525330
+    # BUG: The pixel formats in the above example were not working. Used http://softwareservices.flir.com/BFS-U3-200S6/latest/Model/public/ImageFormatControl.html
+    raw_data = np.frombuffer(aravis_buffer.get_data(), np.uint8)
+    # data = np.frombuffer(ptr, dtype=np.uint8)
+    raw_data_uint16 = raw_data.astype(np.uint16)
+    result = np.zeros(raw_data.size*2//3, np.uint16)
+
+    # This is a bit of a mind bender, but achieves shifting around all the data.
+    # For reference: [0::3] gives every 3 entry starting at the 0th entry.
+    result[0::2] = ((raw_data_uint16[1::3] & 0x0F)) | ( raw_data_uint16[0::3] << 4 )
+    result[1::2] = ((raw_data_uint16[1::3] & 0xF0) >> 4) | ( raw_data_uint16[2::3] << 4 )
+    image = np.reshape(result, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width()))
+
+    # Old method
+    # fst_uint8, mid_uint8, lst_uint8 = np.reshape(raw_data, (-1, 3)).astype(np.uint16).T
+    # # fst_uint12 = ((mid_uint8 & 0x0F) << 8) | fst_uint8
+    # fst_uint12 = ((mid_uint8 & 0xF0) >> 4) | fst_uint8
+    # # snd_uint12 = (lst_uint8 << 4) | ((mid_uint8 & 0xF0) >> 4)
+    # snd_uint12 = (lst_uint8 << 4) | ((mid_uint8 & 0x0F) << 8)
+    # image = np.reshape(np.concatenate((fst_uint12[:, None], snd_uint12[:, None]), axis=1), (aravis_buffer.get_image_height(), aravis_buffer.get_image_width()))
+    return image.copy()
+
+
+def unpack_BayerRG12(aravis_buffer):
+    addr = aravis_buffer.get_data()
+    ptr = ctypes.cast(addr, ctypes.POINTER(ctypes.c_uint16))
+    image = np.ctypeslib.as_array(ptr, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width()))
+    return image.copy()
+
+
 def convert(buf) -> typing.Optional[cv2.Mat]:
     ### Credit: https://github.com/SintefRaufossManufacturing/python-aravis/blob/master/aravis.py#L181
     if not buf:
         return None
     pixel_format = buf.get_image_pixel_format()
-    bits_per_pixel = pixel_format >> 16 & 0xFF
-    if bits_per_pixel == 8:
-        INTP = ctypes.POINTER(ctypes.c_uint8)
+    if pixel_format == Aravis.PIXEL_FORMAT_BAYER_RG_12_PACKED:
+        image = unpack_BayerRG12Packed(buf)
+    elif pixel_format == Aravis.PIXEL_FORMAT_BAYER_RG_12:
+        image = unpack_BayerRG12(buf)
     else:
-        INTP = ctypes.POINTER(ctypes.c_uint16)
-    addr = buf.get_data()
-    ptr = ctypes.cast(addr, INTP)
-    im = np.ctypeslib.as_array(ptr, (buf.get_image_height(), buf.get_image_width()))
-    im = im.copy()
-    return im
+        raise ValueError(f"Unsupported pixel format: {pixel_format}")
+    return image
 
 
 def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:
@@ -78,7 +112,7 @@ def resize_with_aspect_ratio(
 class CameraHelper():
     def __init__(self, name: typing.Optional[str]) -> None:
         try:
-            self.camera: Aravis.Camera = Aravis.Camera.new(name)
+            self.camera: Aravis.Camera = Aravis.Camera.new(name)  # type: ignore
         except Exception as exc:
             log.exception("Could not open camera")
             raise exc
@@ -86,12 +120,26 @@ class CameraHelper():
         log.info(f"Opened {self.name}")
         self.cached_image: typing.Optional[typing.Any] = None
         self.cached_image_time: typing.Optional[str] = None
+        self.pixel_format_str: typing.Optional[str] = None
         self.set_default_camera_options()
+
+    def select_pixel_format(self):
+        """Attempt to use best option pixel format"""
+        supported_pixel_formats_str: typing.List[str] = self.camera.dup_available_pixel_formats_as_strings()
+        for pixel_format_str in PIXEL_FORMAT_PREFERENCE_LIST:
+            # TODO: Possibly do data sanitation
+            if pixel_format_str in supported_pixel_formats_str:
+                self.camera.set_pixel_format_from_string(pixel_format_str)
+                self.pixel_format_str = pixel_format_str
+                log.info(f"Using {self.pixel_format_str} for {self.name}")
+                return
+        raise ValueError(f"Could not find a compatible pixel format in devices supported formats: {supported_pixel_formats_str}")
     
     def set_default_camera_options(self):
-        self.camera.gv_set_packet_size_adjustment(Aravis.GvPacketSizeAdjustment.ON_FAILURE)
-        self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
-        self.camera.set_pixel_format(Aravis.PIXEL_FORMAT_BAYER_RG_12)
+        if self.camera.is_gv_device():
+            self.camera.gv_set_packet_size_adjustment(Aravis.GvPacketSizeAdjustment.ON_FAILURE)
+            self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
+        self.select_pixel_format()
         self.camera.set_frame_rate(1)
         # self.camera.set_exposure_time(1000)
 
@@ -179,7 +227,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
     out_dir.mkdir(exist_ok=True)
 
     # Check display aspects
-    if os.name == 'posix' and "DISPLAY" in os.environ:
+    if os.name == 'posix' and "DISPLAY" in os.environ and os.environ["DISPLAY"] != "":
         DISPLAY = True
     else:
         # Don't support windows at this stage
