@@ -192,7 +192,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
         # Open all cameras
         for i in range(Aravis.get_n_devices()):
             try:
-                camera = CameraHelper(Aravis.get_device_address(i))
+                camera = CameraHelper(Aravis.get_device_id(i))
             except Exception as exc:
                 # Ignore non-compliant cameras (Chronoptics)
                 if "arv-device-error-quark" in str(exc):
