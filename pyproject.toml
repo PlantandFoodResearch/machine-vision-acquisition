@@ -9,7 +9,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-opencv-python = "^4.5.5"
+opencv-python = "^4.5"
 click = "^8.1.2"
 
 [tool.poetry.dev-dependencies]
