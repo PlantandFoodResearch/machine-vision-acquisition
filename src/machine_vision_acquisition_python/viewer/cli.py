@@ -140,7 +140,7 @@ class CameraHelper():
             self.camera.gv_set_packet_size_adjustment(Aravis.GvPacketSizeAdjustment.ON_FAILURE)
             self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
         self.select_pixel_format()
-        self.camera.set_frame_rate(1)
+        self.camera.set_frame_rate(30)
         # self.camera.set_exposure_time(1000)
 
         self.camera.set_trigger("Software")
@@ -150,18 +150,39 @@ class CameraHelper():
         self.stream.push_buffer(Aravis.Buffer.new_allocate(payload))
         self.camera.start_acquisition()
 
+    def settle_auto_exposure(self, length_s=5):
+        """Run camera for x seconds to let exposure settle"""
+        start = timer()
+        while True:
+            self.camera.software_trigger()
+            buffer = self.stream.try_pop_buffer()
+            if buffer is not None:
+                self.stream.push_buffer(buffer)
+            if (timer() - start) > length_s:
+                break
+        log.info(f"Ran camera for {length_s}s")
 
     def get_single_image(self):
         """Acquire and cache a single image"""
         start = timer()
+        #  grab and throw away 10 frames first for auto-exposure to settle.
+        # for i in range(10):
+        #     # dispose of some frames
+        #     self.camera.software_trigger()
+        #     buffer = self.stream.pop_buffer()
+        #     if buffer is not None:
+        #         self.stream.push_buffer(buffer)
         self.camera.software_trigger()
         buffer = self.stream.timeout_pop_buffer(1 * 1000 * 1000)  # 1 second
-        if not buffer:
-            raise TimeoutError("Failed to get an image from the camera")
-        image = convert(buffer)
-        if not image.any():
-            raise ValueError("Failed to convert buffer to image")
-        self.stream.push_buffer(buffer)  # push buffer back into stream
+        try:
+            if not buffer:
+                raise TimeoutError("Failed to get an image from the camera")
+            image = convert(buffer)
+            if not image.any():
+                raise ValueError("Failed to convert buffer to image")
+        finally:
+            if buffer is not None:
+                self.stream.push_buffer(buffer)  # push buffer back into stream
         self.cached_image = image  # Cache the raw image for optional saving
         self.cached_image_time = time.strftime("%Y-%m-%dT%H%M%S")
 
@@ -219,6 +240,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
     Simple camera snapshot grabber and saver.
     Hotkeys:\n
     * 'q' to exit\n
+    * 'e' to auto expose (run cameras for 5s each)\n
     * 'n' to grab new frames from cameras (software triggered, not synchronised)\n
     * 's' to save the displayed frame (as non-processed BayerRG12 PNG)\n
     * 't' to save the displayed frame (as tonemapped RGB PNG)\n
@@ -286,6 +308,9 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                 ch = click.prompt("Please enter a command", type=click.types.STRING, show_choices=click.Choice(["n", "s", "t", "q"]))
             if ch == "q":
                 break
+            elif ch == "e":
+                for camera in cameras:
+                    camera.settle_auto_exposure()
             elif ch == "n":
                 # Capture new image from all cameras
                 for camera in cameras:
