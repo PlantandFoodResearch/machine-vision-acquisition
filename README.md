@@ -119,6 +119,9 @@ python3 -m machine_vision_acquisition_python.viewer.tof --help
 
 # Troubleshooting & FAQ
 
+## Sudo-less USB3 cameras:
+Follow the `udev` advice here: https://aravisproject.github.io/aravis/usb.html
+
 ### Can't see USB3 camera?
 * Often you must use `sudo -E` to access USB devices. Try this first.
 * Replugged (or reset) USB devices are not being refreshed in docker container. `https://www.balena.io/docs/reference/base-images/base-images/#working-with-dynamically-plugged-devices` might serve as a starting point. Or `https://github.com/moby/moby/issues/35359`. Or `https://forums.docker.com/t/usb-device-not-working-not-sure-why/1143/3`
