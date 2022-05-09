@@ -1,68 +1,26 @@
 version: '3.6'
 
 services:
-  base:
-    build:
-      dockerfile: builder.dockerfile
-      context: ./docker
-      target: cmake-gcc
   aravis:
+    # Ensures when container crashes or host reboots, it should start up.
     restart: always
-    network_mode: "host"
-    environment:
-      - DISPLAY
-      - LIBGL_ALWAYS_INDIRECT
-    build:
-      dockerfile: builder.dockerfile
-      context: ./docker
-      target: aravis-dev
-    command: [ "bash", "-c", "python3 -m pip install -e . && sleep infinity"]
-    volumes:
-      - .:/src
-      - ${POWERPLANT_SINK_DIR:-output}:/output/
-      - workspace:/home/vscode/workspace
-  aravis-pi:
-    restart: always
-    network_mode: "host"
+    network_mode: "host"  # Allows direct GigE access and X11 forwarding
     devices:
      - "/dev/bus/usb:/dev/bus/usb"  # All USB devices
     environment:
-      - DISPLAY
-      - LIBGL_ALWAYS_INDIRECT
-    build:
-      dockerfile: builder.rpi.dockerfile
-      context: ./docker
-      target: aravis-dev
-    command: [ "bash", "-c", "python3 -m pip install -e . && sleep infinity"]
-    volumes:
-      - .:/src
-      - ${POWERPLANT_SINK_DIR:-output}:/output/
-      - workspace:/home/vscode/workspace
-  mvimpact:
-    network_mode: "host"
-    environment:
+    # These allow x11 forwarding if whomever starts the container has them set
       - DISPLAY
       - LIBGL_ALWAYS_INDIRECT
     build:
       dockerfile: builder.dockerfile
       context: ./docker
-      target: mvIMPACT-dev
+      target: aravis-dev
+    # This ensures the current directory is installed in editable mode.
+    command: [ "bash", "-c", "python3 -m pip install -e /src && sleep infinity"]
     volumes:
-      - .:/src
-      - workspace:/home/vscode/workspace
-  aravis-deb:
-    restart: always
-    network_mode: "host"
-    environment:
-      - DISPLAY
-      - LIBGL_ALWAYS_INDIRECT
-    build:
-      dockerfile: aravis.dockerfile
-      context: ./docker
-    volumes:
-      - .:/src
-      - ${POWERPLANT_SINK_DIR:-output}:/output/
-      - workspace:/workspace
+    # Using variables here allows them to be over-ridden, but have sane defaults
+      - ${SRC_DIR:-.}:/src
+      - ${POWERPLANT_SINK_DIR:-/media/powerplant-sink/}:/output/
   multi-sdk:
     restart: always
     network_mode: "host"
@@ -70,14 +28,13 @@ services:
       - DISPLAY
       - LIBGL_ALWAYS_INDIRECT
     build:
-      dockerfile: multi-sdk.dockerfile
+      dockerfile: builder.dockerfile
       context: ./docker
-    command: [ "bash", "-c", "python3 -m pip install -e . && sleep infinity"]
+      target: multi-sdk-dev
+    command: [ "bash", "-c", "python3 -m pip install -e /src && sleep infinity"]
     volumes:
-      - .:/src
-      - ${POWERPLANT_SINK_DIR:-output}:/output/
-      - workspace:/home/vscode/workspace
+      - ${SRC_DIR:-.}:/src
+      - ${POWERPLANT_SINK_DIR:-/media/powerplant-sink/}:/output/
 
 volumes:
-  workspace:
   output:

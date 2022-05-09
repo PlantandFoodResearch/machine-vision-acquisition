@@ -1,26 +1,23 @@
-# bionic==18.04
-ARG DISTRO=bionic
-ARG GCC_MAJOR=11
+# bullseye==11
+ARG DISTRO=bullseye
 ARG ARAVIS_URL=https://github.com/AravisProject/aravis/releases/download/0.8.21/aravis-0.8.21.tar.xz
+ARG CHRONOPTICS_URL=https://storage.powerplant.pfr.co.nz/workspace/software_cache/chronoptic/3.0.1-January2022/tof-linux-x86_64.tar.gz
+
 
 #  FROM ubuntu:${DISTRO} as cmake-gcc  # If you don't want the dev container components
-FROM ubuntu:${DISTRO} as cmake-gcc
+FROM debian:${DISTRO}-slim as cmake-gcc
 ARG DISTRO
-ARG GCC_MAJOR
 ARG APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 ARG DEBIAN_FRONTEND=noninteractive
-
-LABEL Description="Ubuntu ${DISTRO} - Gcc ${GCC_MAJOR} + modern CMake + Python3.8"
 
 ENV \
     TZ=Pacific/Auckland \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-# install GCC
 RUN apt-get update --quiet \
     # Ensure Timezone is set
-    && ln -s /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && ln -f -s /usr/share/zoneinfo/${TZ} /etc/localtime \
     && apt-get upgrade --yes --quiet \
     && apt-get install --yes --quiet --no-install-recommends \
         wget \
@@ -30,43 +27,28 @@ RUN apt-get update --quiet \
         tzdata \
         software-properties-common \
         lsb-release \
-    # Add modern GCC repository
-    && wget -qO - "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x60c317803a41ba51845e371a1e9377a2ba9ef27f" | apt-key add - \
-    && echo "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/gcc.list \
-    # Add modern cmake repository
-    && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
-    && apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
-    # Modern python
-    && add-apt-repository --yes ppa:deadsnakes/ppa \
-    && apt-get update --quiet \
-    && apt-get install --yes --quiet --no-install-recommends \
         # Some tools still require build-essential
         build-essential \
         cmake \
         git \
         ninja-build \
-        libstdc++-${GCC_MAJOR}-dev \
-        gcc-${GCC_MAJOR} \
-        g++-${GCC_MAJOR} \
         gdb \
-    && update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_MAJOR} 100 \
-    && update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-${GCC_MAJOR} 100 \
-    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_MAJOR} 100 \
-    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_MAJOR} 100 \
+        python3 \
+        python3-distutils \
+        python3-dev \
     && c++ --version \
-    # Python 3.8
-    && apt-get install --yes python3.8 python3.8-distutils python3.8-dev \
+    && python3 --version \
     && wget -q https://bootstrap.pypa.io/get-pip.py \
-    && python3.8 get-pip.py \
+    && python3 get-pip.py \
     && apt-get --yes autoremove \
     && apt-get clean autoclean \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 
 # Use tini as entrypoint
-ENV TINI_VERSION v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
+RUN apt-get update --quiet \
+    && apt-get install --quiet --yes tini \
+    && apt-get clean autoclean
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 
 FROM cmake-gcc as base-dev
@@ -86,6 +68,10 @@ RUN apt-get update \
     # Clean up
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/library-scripts/
 
+# Add piwheels to prevent/reduce compiling on-device (e.g. otherwise installing opencv can take days!)
+RUN echo "[global]\n" \
+         "extra-index-url=https://www.piwheels.org/simple\n"\ > /etc/pip.conf
+
 CMD [ "sleep", "infinity" ]
 
 
@@ -96,28 +82,24 @@ RUN mkdir -p /opt/src \
     && apt-get update --quiet \
     && apt-get install --yes \
         libxml2-dev \
+        gettext \
         libglib2.0-dev \
         libusb-1.0-0-dev \
         gobject-introspection \
         libgtk-3-dev \
         gtk-doc-tools \
         xsltproc \
-        libgstreamer1.0-dev \
-        libgstreamer-plugins-base1.0-dev \
-        libgstreamer-plugins-good1.0-dev \
-        libgstreamer-plugins-bad1.0-dev \
-        gstreamer1.0-plugins-base \
-        gstreamer1.0-plugins-good \
-        gstreamer1.0-plugins-bad \
-        gstreamer1.0-plugins-ugly \
-        gstreamer1.0-gtk3 \
+        # Gstreamer install from https://gstreamer.freedesktop.org/documentation/installing/on-linux.html?gi-language=c#install-gstreamer-on-ubuntu-or-debian
+        libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio \
+        # This appears to possibly help arv-viewer
         dbus-x11 \
         libgirepository1.0-dev \
         # Probably already installed, but better safe than sorry
         ninja-build \
+        meson \
     && apt-get clean autoclean \
-    # apt's meson is too old. Get from pypi
-    && pip3 install meson
+    # Needed for gi-docgen
+    && python3 -m pip install jinja2 markdown markupsafe pygments toml typogrify
 
 RUN mkdir -p /opt/src/aravis \
     && wget -qO - ${ARAVIS_URL} | tar --strip-components=1 -xJ -C /opt/src/aravis \
@@ -130,15 +112,18 @@ RUN mkdir -p /opt/src/aravis \
     && ldconfig \
     && cd /
 
-RUN python3.8 -m pip install -U pip setuptools wheel \
-    # needs --ignore-installed because python3.6 interferes
-    && python3.8 -m pip install --ignore-installed -U PyGObject pycairo PyGObject-stubs \
-    && python3.8 -m pip install -U opencv-python \
+RUN python3 -m pip install -U pip setuptools wheel \
+    && python3 -m pip install -U PyGObject pycairo PyGObject-stubs \
+    # Force binary install of opencv since building it can take days!
+    # Refer: https://www.piwheels.org/project/opencv-python/ & https://www.piwheels.org/project/numpy/
+    && apt-get install --yes libva-drm2 libpangoft2-1.0-0 libxvidcore4 libxkbcommon0 libchromaprint1 libpgm-5.3-0 libopus0 libwayland-cursor0 libpango-1.0-0 libbluray2 libsnappy1v5 libxrandr2 libthai0 libzvbi0 libnorm1 libpixman-1-0 libzmq5 libx265-192 libgraphite2-3 libxdamage1 libwayland-client0 libgtk-3-0 libsrt1.4-gnutls libxcursor1 libx264-160 libspeex1 libswscale5 libdav1d4 libmp3lame0 libgsm1 libatspi2.0-0 libxcb-render0 libavformat58 libvdpau1 libgme0 libcodec2-0.9 libwebpmux3 libshine3 libvorbis0a libsoxr0 libdrm2 libva-x11-2 libcairo-gobject2 libavutil56 libxfixes3 libvorbisfile3 librabbitmq4 libxrender1 libsodium23 libharfbuzz0b libtwolame0 libswresample3 libavcodec58 libxcomposite1 libwavpack1 libogg0 libepoxy0 libvorbisenc2 libxi6 libatlas3-base libgfortran5 libvpx6 libcairo2 libudfread0 libatk1.0-0 libgdk-pixbuf-2.0-0 libdatrie1 libmpg123-0 libxinerama1 libopenjp2-7 libaom0 libva2 libopenmpt0 libpangocairo-1.0-0 libwayland-egl1 libatk-bridge2.0-0 libtheora0 ocl-icd-libopencl1 libxcb-shm0 librsvg2-2 libssh-gcrypt-4 libgfortran5 libatlas3-base \
+    && apt-get clean autoclean \
+    && python3 -m pip install -U --only-binary=:all: numpy opencv-python \
     && mkdir -p /usr/lib/girepository-1.0/ \
-    && ln -s /usr/local/lib/x86_64-linux-gnu/girepository-1.0/Aravis-0.8.typelib /usr/lib/girepository-1.0/ \
+    && ln -s $(find /usr/local/lib/ -type f -name "Aravis-0.8.typelib") /usr/lib/girepository-1.0/ \
     # Generate python stubs
     && wget -qO - https://raw.githubusercontent.com/pygobject/pygobject-stubs/master/tools/generate.py | \
-    python3.8 - Aravis 0.8 >> /usr/local/lib/python3.8/dist-packages/gi-stubs/repository/Aravis.pyi
+    python3 - Aravis 0.8 >> $(python3 -c 'import site; print(site.getsitepackages()[0])')/gi-stubs/repository/Aravis.pyi
 
 WORKDIR /src
 USER vscode
@@ -171,3 +156,40 @@ ENV MVIMPACT_ACQUIRE_DIR=/opt/mvIMPACT_Acquire
 WORKDIR /src
 USER vscode
 CMD [ "bash", "-l"]
+
+
+# Uses the Aravis image as a starting point, so that must be build first!
+FROM aravis-dev as multi-sdk-dev
+LABEL Description="Debian Aravis + Chronoptics SDK development container"
+
+# Download and chronoptics SDK
+ARG CHRONOPTICS_URL
+ARG TARGETPLATFORM
+USER root
+RUN export ARCHITECTURE="$(arch)" \
+    && echo "ARCHITECTURE: $ARCHITECTURE\nTARGETPLATFORM: $TARGETPLATFORM" \
+    && if [ $ARCHITECTURE != "x86_64" ]; then \
+        echo "$ARCHITECTURE not supported" && exit 127; \
+    fi \
+    && mkdir -p /opt/src \
+    && mkdir -p /opt/src/chronoptics \
+    && wget --no-check-certificate -qO - ${CHRONOPTICS_URL} | tar -xz -C /opt/src/chronoptics \
+    # Install library load paths
+    && touch /etc/ld.so.conf.d/Chronoptics.conf \
+    && echo /opt/src/chronoptics/lib >> /etc/ld.so.conf.d/Chronoptics.conf \
+    && ldconfig
+ENV CHRONOPTICS_ROOT="/opt/src/chronoptics"
+ENV PYTHONPATH "${PYTHONPATH}:/opt/src/chronoptics/lib/python"
+ENV PATH "${PATH}:/opt/src/chronoptics/bin"
+
+WORKDIR /src
+USER vscode
+CMD [ "bash", "-l"]
+
+
+
+# Future multi arch support notes:
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# arch: armv7l
+# dpkg --print-architecture: armhf
+# uname -m: armv7l

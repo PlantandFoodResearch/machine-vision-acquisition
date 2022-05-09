@@ -153,14 +153,17 @@ class CameraHelper():
     def settle_auto_exposure(self, length_s=5):
         """Run camera for x seconds to let exposure settle"""
         start = timer()
-        while True:
-            self.camera.software_trigger()
-            buffer = self.stream.try_pop_buffer()
-            if buffer is not None:
-                self.stream.push_buffer(buffer)
-            if (timer() - start) > length_s:
-                break
-        log.info(f"Ran camera for {length_s}s")
+        try:
+            while True:
+                self.camera.software_trigger()
+                buffer = self.stream.try_pop_buffer()
+                if buffer is not None:
+                    self.stream.push_buffer(buffer)
+                if (timer() - start) > length_s:
+                    break
+            log.info(f"Ran camera for {length_s}s")
+        except AttributeError as _:
+            log.info(f"Could not run settle_auto_exposure for {self.name}")
 
     def get_single_image(self):
         """Acquire and cache a single image"""

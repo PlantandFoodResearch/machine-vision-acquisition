@@ -1,0 +1,26 @@
+version: '3.6'
+
+services:
+  base:
+    build:
+      dockerfile: builder.dockerfile
+      context: ./docker
+      target: cmake-gcc
+  mvimpact:
+    network_mode: "host"
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: builder.dockerfile
+      context: ./docker
+      target: mvIMPACT-dev
+  aravis-deb:
+    restart: always
+    network_mode: "host"
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: aravis.dockerfile
+      context: ./docker

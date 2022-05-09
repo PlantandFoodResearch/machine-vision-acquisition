@@ -6,13 +6,36 @@ Since many manufacturers of cameras offer thier individual SDKs; this repository
 
 The [*Aravis*](https://github.com/AravisProject/aravis) environment is a good starting point. This is an open-source vendor agnostic GenICam compliant acquisition framework.
 
+### Docker: Quick start
+Within in appropriate environment and the root of this folder, run:
+```bash
+# Optional: Enable build kit on old docker versions
+export DOCKER_BUILDKIT=1
+docker compose build aravis multi-sdk
+# Optionally explicitly control output directory
+POWERPLANT_SINK_DIR=/media/powerplant-sink/ docker compose up -d aravis multi-sdk
+# Otherwise:
+docker compose up -d aravis multi-sdk
+# Give the containers a few seconds to perform the initial startup commands. Then you can launch a shell into the container with:
+docker compose exec multi-sdk bash
+# List cameras (with Aravis, sudo for USB3)
+docker compose exec multi-sdk sudo arv-tool-0.8
+```
+
+### Docker: Multi-SDK
+This is basically the Aravis container but with some additonal other SDKs. This should be the main container used (on platforms that support it). Currently included are:
+* Aravis (built from source)
+* Chronoptics
+
+
 ### Docker: Aravis
 The Aravis development environment has two main flavors:
 * `aravis` Built from source
-* `aravis-deb` Debian package installed
+* `aravis-deb` Debian package installed (in [docker/docker-compose.extras.yml](docker/docker-compose.extras.yml))
+
 
 ### Output Volume
-The containers will mount the value of the environment variable `POWERPLANT_SINK_DIR` to `/output`. This will default to a named volume `output` if not defined or empty. To use this follow the example:
+The containers will mount the value of the environment variable `POWERPLANT_SINK_DIR` to `/output`. This will default to the path `/media/powerplant-sink/` if not defined or empty. To use this follow the example:
 ```bash
 # Setup lsyncd or other syncrhonising on host at a specific point. E.g. "/media/powerplant-sink/"
 export POWERPLANT_SINK_DIR=/media/powerplant-sink/
@@ -59,18 +82,18 @@ DeviceFactoryReset executed
 ```
 
 ## Tools
-To use these tools, if they are python, ensure you have the dependencies installed. Either run `python3.8 -m pip install -e .` in the repo root or manually do this. Use a virtual environment if not in a Docker container.
+To use these tools, if they are python, ensure you have the dependencies installed. Either run `python3 -m pip install -e .` in the repo root or manually do this. Use a virtual environment if not in a Docker container.
 
 ### CLI Image Viewer and Save tool
 Mainly in [cli.py](./src/machine_vision_acquisition_python/viewer/cli.py). View CLI help for info:
 ```
-python3.8 -m machine_vision_acquisition_python.viewer --help
+python3 -m machine_vision_acquisition_python.viewer --help
 ```
-Example to run with all cameras and forward display to x11:
+Example to run with all cameras and forward display to x11 (These should be automatically set in the containers):
 ```bash
-DISPLAY=localhost:10.0 LIBGL_ALWAYS_INDIRECT=1 python3.8 -m machine_vision_acquisition_python.viewer --all --out-dir=./tmp/data-root/manu/
+DISPLAY=localhost:10.0 LIBGL_ALWAYS_INDIRECT=1 python3 -m machine_vision_acquisition_python.viewer --all --out-dir=./tmp/data-root/manu/
 # Example output if you pressed 'n' followed by 's', then 'q' to quit. "169.254.27.139" is the Chronoptics camera and can safely be ignored.
-python3.8 -m machine_vision_acquisition_python.viewer --all --out-dir=./tmp/data-root/manu/
+python3 -m machine_vision_acquisition_python.viewer --all --out-dir=./tmp/data-root/manu/
 ERROR:machine_vision_acquisition_python.viewer.cli:Could not open camera
 Traceback (most recent call last):
   File "/src/src/machine_vision_acquisition_python/viewer/cli.py", line 70, in __init__
@@ -90,7 +113,7 @@ DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu
 ### Chronoptics ToF Camera viewer
 Mainly in [tof.py](./src/machine_vision_acquisition_python/viewer/tof.py). View CLI help for info:
 ```
-python3.8 -m machine_vision_acquisition_python.viewer.tof --help
+python3 -m machine_vision_acquisition_python.viewer.tof --help
 ```
 
 # Troubleshooting & FAQ
