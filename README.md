@@ -20,7 +20,7 @@ docker compose up -d aravis multi-sdk
 # Give the containers a few seconds to perform the initial startup commands. Then you can launch a shell into the container with:
 docker compose exec multi-sdk bash
 # List cameras (with Aravis, sudo for USB3)
-docker compose exec multi-sdk sudo arv-tool-0.8
+docker compose exec aravis arv-tool-0.8
 ```
 
 ### Docker: Multi-SDK
@@ -124,5 +124,5 @@ Follow the `udev` advice here: https://aravisproject.github.io/aravis/usb.html
 
 ### Can't see USB3 camera?
 * Often you must use `sudo -E` to access USB devices. Try this first.
-* Replugged (or reset) USB devices are not being refreshed in docker container. `https://www.balena.io/docs/reference/base-images/base-images/#working-with-dynamically-plugged-devices` might serve as a starting point. Or `https://github.com/moby/moby/issues/35359`. Or `https://forums.docker.com/t/usb-device-not-working-not-sure-why/1143/3`
+* Replugged (or reset) USB devices are not being refreshed in docker container. This should have been fixed, otherwise: `https://www.balena.io/docs/reference/base-images/base-images/#working-with-dynamically-plugged-devices` might serve as a starting point. Or `https://github.com/moby/moby/issues/35359`. Or `https://forums.docker.com/t/usb-device-not-working-not-sure-why/1143/3`
 

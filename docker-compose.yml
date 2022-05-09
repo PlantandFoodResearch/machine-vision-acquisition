@@ -5,8 +5,7 @@ services:
     # Ensures when container crashes or host reboots, it should start up.
     restart: always
     network_mode: "host"  # Allows direct GigE access and X11 forwarding
-    devices:
-     - "/dev/bus/usb:/dev/bus/usb"  # All USB devices
+    privileged: true # All USB devices, even when hotplugged
     environment:
     # These allow x11 forwarding if whomever starts the container has them set
       - DISPLAY
@@ -21,6 +20,7 @@ services:
     # Using variables here allows them to be over-ridden, but have sane defaults
       - ${SRC_DIR:-.}:/src
       - ${POWERPLANT_SINK_DIR:-/media/powerplant-sink/}:/output/
+      - "/dev/bus/usb:/dev/bus/usb"  # All USB devices, even when hotplugged
   multi-sdk:
     restart: always
     network_mode: "host"
