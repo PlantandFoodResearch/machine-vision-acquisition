@@ -11,7 +11,8 @@ Within in appropriate environment and the root of this folder, run:
 ```bash
 # Optional: Enable build kit on old docker versions
 export DOCKER_BUILDKIT=1
-docker compose build aravis multi-sdk
+# multi-sdk depends on aravis
+docker compose build aravis && docker compose build multi-sdk
 # Optionally explicitly control output directory
 POWERPLANT_SINK_DIR=/media/powerplant-sink/ docker compose up -d aravis multi-sdk
 # Otherwise:
