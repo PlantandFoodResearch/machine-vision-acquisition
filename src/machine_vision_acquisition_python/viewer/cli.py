@@ -7,6 +7,8 @@ import typing
 import numpy as np
 from pathlib import Path
 from timeit import default_timer as timer
+import machine_vision_acquisition_python.utils
+
 
 
 log = logging.getLogger(__name__)
@@ -114,7 +116,7 @@ class CameraHelper():
         try:
             self.camera: Aravis.Camera = Aravis.Camera.new(name)  # type: ignore
         except Exception as exc:
-            log.exception("Could not open camera")
+            log.debug(f"Could not open camera: {name}")
             raise exc
         self.name = f"{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
         log.info(f"Opened {self.name}")
@@ -247,6 +249,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
     * 'n' to grab new frames from cameras (software triggered, not synchronised)\n
     * 's' to save the displayed frame (as non-processed BayerRG12 PNG)\n
     * 't' to save the displayed frame (as tonemapped RGB PNG)\n
+    * 'p' to toggle PTP mode (and print stats)\n
     """
     out_dir = Path(out_dir).resolve()  # Resolve and cast to Path
     out_dir.mkdir(exist_ok=True)
@@ -314,6 +317,8 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
             elif ch == "e":
                 for camera in cameras:
                     camera.settle_auto_exposure()
+            elif ch == "p":
+                machine_vision_acquisition_python.utils.enable_ptp_sync(cameras)
             elif ch == "n":
                 # Capture new image from all cameras
                 for camera in cameras:
