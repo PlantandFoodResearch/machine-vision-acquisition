@@ -80,7 +80,7 @@ FROM base-dev as aravis-dev
 ARG ARAVIS_URL=https://github.com/AravisProject/aravis/releases/download/0.8.21/aravis-0.8.21.tar.xz
 RUN mkdir -p /opt/src \
     && apt-get update --quiet \
-    && apt-get install --yes \
+    && apt-get --no-install-recommends install --yes \
         libxml2-dev \
         gettext \
         libglib2.0-dev \
