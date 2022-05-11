@@ -117,6 +117,22 @@ Mainly in [tof.py](./src/machine_vision_acquisition_python/viewer/tof.py). View 
 python3 -m machine_vision_acquisition_python.viewer.tof --help
 ```
 
+### Systemd service to restart DHCP and NMCLI connections
+To mitigate issues with the devices not being stable, a quick helper service was created.
+#### Install
+```bash
+# In a sudo shell (i.e. sudo -E su)
+mkdir -p /opt/nmcli-dhcp-manager
+python3 -m venv /opt/nmcli-dhcp-manager/.venv
+cp ./etc/nmcli-dhcp-manager.service /etc/systemd/system/
+cp ./src/utils/nmcli-dhcp-manager.py /opt/nmcli-dhcp-manager/nmcli-dhcp-manager.py
+/opt/nmcli-dhcp-manager/.venv/bin/python -m pip install -U pip setuptools wheel
+/opt/nmcli-dhcp-manager/.venv/bin/python -m pip install -r ./src/utils/requirements.nmcli-dhcp-manager.txt
+systemctl daemon-reload
+systemctl enable nmcli-dhcp-manager
+systemctl start nmcli-dhcp-manager
+```
+
 # Troubleshooting & FAQ
 
 ## Sudo-less USB3 cameras:

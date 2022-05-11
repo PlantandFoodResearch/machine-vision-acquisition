@@ -1,0 +1,13 @@
+[Unit]
+Description=nmcli-dhcp-manager
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/opt/nmcli-dhcp-manager
+ExecStart=/opt/nmcli-dhcp-manager/.venv/bin/python /opt/nmcli-dhcp-manager/nmcli-dhcp-manager.py --devices enp4s0
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
