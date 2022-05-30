@@ -35,6 +35,65 @@ services:
     volumes:
       - ${SRC_DIR:-.}:/src
       - ${POWERPLANT_SINK_DIR:-/media/powerplant-sink/}:/output/
+  ros-dev:
+    network_mode: "host"
+    restart: always
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: ros/ros-example.dockerfile
+      context: ./docker
+    volumes:
+    # Using variables here allows them to be over-ridden, but have sane defaults
+      - ${SRC_DIR:-.}:/src
+    command: [ "bash", "-c", "sleep infinity"]
+  ros1-dev:
+    network_mode: "host"
+    restart: always
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    image: ros:noetic-ros-base-focal
+    volumes:
+    # Using variables here allows them to be over-ridden, but have sane defaults
+      - ${SRC_DIR:-.}:/src
+    command: [ "bash", "-c", "sleep infinity"]
+  ros2-base:
+    build:
+      dockerfile: ros/ros2.examplenode.dockerfile
+      context: ./docker
+  ros1-core:
+    # network_mode: "host"
+    ports:
+      - "11311:11311"
+    extra_hosts:
+      - "rua-x-imageplaypen.pfr.co.nz:10.20.100.40"
+      - "rua-x-imageplaypen:10.20.100.40"
+    image: ros:noetic-ros-base-buster
+    command: "roscore"
+  ros1-aravis:
+    network_mode: "host"
+    depends_on:
+      - ros1-core
+    build:
+      dockerfile: ros/aravis.node.dockerfile
+      context: ./docker
+    environment:
+      - "ROS_HOSTNAME=rua-x-imageplaypen.pfr.co.nz"
+      - "ROS_MASTER_URI=http://rua-x-imageplaypen.pfr.co.nz:11311"
+  bridge:
+    image: ros:foxy-ros1-bridge
+    extra_hosts:
+      - "rua-x-imageplaypen.pfr.co.nz:10.20.100.40"
+      - "rua-x-imageplaypen:10.20.100.40"
+    depends_on:
+      - ros1-core
+    environment:
+      - "ROS_MASTER_URI=http://ros1-core:11311"
+    command: ros2 run ros1_bridge dynamic_bridge --bridge-all-1to2-topics
+
 
 volumes:
   output:
+  workspace:
