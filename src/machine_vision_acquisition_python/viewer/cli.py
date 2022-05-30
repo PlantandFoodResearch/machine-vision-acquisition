@@ -10,7 +10,6 @@ from timeit import default_timer as timer
 import machine_vision_acquisition_python.utils
 
 
-
 log = logging.getLogger(__name__)
 
 DISPLAY_SIZE_WIDTH = 1280
@@ -37,13 +36,15 @@ def unpack_BayerRG12Packed(aravis_buffer):
     raw_data = np.frombuffer(aravis_buffer.get_data(), np.uint8)
     # data = np.frombuffer(ptr, dtype=np.uint8)
     raw_data_uint16 = raw_data.astype(np.uint16)
-    result = np.zeros(raw_data.size*2//3, np.uint16)
+    result = np.zeros(raw_data.size * 2 // 3, np.uint16)
 
     # This is a bit of a mind bender, but achieves shifting around all the data.
     # For reference: [0::3] gives every 3 entry starting at the 0th entry.
-    result[0::2] = ((raw_data_uint16[1::3] & 0x0F)) | ( raw_data_uint16[0::3] << 4 )
-    result[1::2] = ((raw_data_uint16[1::3] & 0xF0) >> 4) | ( raw_data_uint16[2::3] << 4 )
-    image = np.reshape(result, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width()))
+    result[0::2] = ((raw_data_uint16[1::3] & 0x0F)) | (raw_data_uint16[0::3] << 4)
+    result[1::2] = ((raw_data_uint16[1::3] & 0xF0) >> 4) | (raw_data_uint16[2::3] << 4)
+    image = np.reshape(
+        result, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width())
+    )
 
     # Old method
     # fst_uint8, mid_uint8, lst_uint8 = np.reshape(raw_data, (-1, 3)).astype(np.uint16).T
@@ -58,7 +59,9 @@ def unpack_BayerRG12Packed(aravis_buffer):
 def unpack_BayerRG12(aravis_buffer):
     addr = aravis_buffer.get_data()
     ptr = ctypes.cast(addr, ctypes.POINTER(ctypes.c_uint16))
-    image = np.ctypeslib.as_array(ptr, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width()))
+    image = np.ctypeslib.as_array(
+        ptr, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width())
+    )
     return image.copy()
 
 
@@ -79,9 +82,12 @@ def convert(buf) -> typing.Optional[cv2.Mat]:
 def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:
     image_f32 = image.astype(np.float32)
     tonemap = cv2.createTonemapReinhard()
-    image_f32_tonemap  = tonemap.process(image_f32)
-    image_uint8 = np.uint8(np.clip(image_f32_tonemap  * 255, 0, 255))  # clip back to uint8
+    image_f32_tonemap = tonemap.process(image_f32)
+    image_uint8 = np.uint8(
+        np.clip(image_f32_tonemap * 255, 0, 255)
+    )  # clip back to uint8
     return image_uint8  # type: ignore
+
 
 def resize_with_aspect_ratio(
     image,
@@ -110,15 +116,16 @@ def resize_with_aspect_ratio(
     return cv2.resize(image, dim, interpolation=inter)
 
 
-
-class CameraHelper():
+class CameraHelper:
     def __init__(self, name: typing.Optional[str]) -> None:
         try:
             self.camera: Aravis.Camera = Aravis.Camera.new(name)  # type: ignore
         except Exception as exc:
             log.debug(f"Could not open camera: {name}")
             raise exc
-        self.name = f"{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
+        self.name = (
+            f"{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
+        )
         log.info(f"Opened {self.name}")
         self.cached_image: typing.Optional[typing.Any] = None
         self.cached_image_time: typing.Optional[str] = None
@@ -127,7 +134,9 @@ class CameraHelper():
 
     def select_pixel_format(self):
         """Attempt to use best option pixel format"""
-        supported_pixel_formats_str: typing.List[str] = self.camera.dup_available_pixel_formats_as_strings()
+        supported_pixel_formats_str: typing.List[
+            str
+        ] = self.camera.dup_available_pixel_formats_as_strings()
         for pixel_format_str in PIXEL_FORMAT_PREFERENCE_LIST:
             # TODO: Possibly do data sanitation
             if pixel_format_str in supported_pixel_formats_str:
@@ -135,11 +144,15 @@ class CameraHelper():
                 self.pixel_format_str = pixel_format_str
                 log.info(f"Using {self.pixel_format_str} for {self.name}")
                 return
-        raise ValueError(f"Could not find a compatible pixel format in devices supported formats: {supported_pixel_formats_str}")
-    
+        raise ValueError(
+            f"Could not find a compatible pixel format in devices supported formats: {supported_pixel_formats_str}"
+        )
+
     def set_default_camera_options(self):
         if self.camera.is_gv_device():
-            self.camera.gv_set_packet_size_adjustment(Aravis.GvPacketSizeAdjustment.ON_FAILURE)
+            self.camera.gv_set_packet_size_adjustment(
+                Aravis.GvPacketSizeAdjustment.ON_FAILURE
+            )
             self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
         self.select_pixel_format()
         self.camera.set_frame_rate(30)
@@ -215,11 +228,7 @@ class CameraHelper():
     default=None,
 )
 @click.option(
-    "--tof",
-    "-t",
-    help="Attempt to use Chronoptics camera",
-    default=True,
-    type=bool
+    "--tof", "-t", help="Attempt to use Chronoptics camera", default=True, type=bool
 )
 @click.option(
     "--all",
@@ -255,7 +264,7 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
     out_dir.mkdir(exist_ok=True)
 
     # Check display aspects
-    if os.name == 'posix' and "DISPLAY" in os.environ and os.environ["DISPLAY"] != "":
+    if os.name == "posix" and "DISPLAY" in os.environ and os.environ["DISPLAY"] != "":
         DISPLAY = True
     else:
         # Don't support windows at this stage
@@ -274,7 +283,10 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                 if "arv-device-error-quark" in str(exc):
                     if tof:
                         # Attempt to get with ToF Handler
-                        from machine_vision_acquisition_python.viewer.tof import ToFCameraHelper
+                        from machine_vision_acquisition_python.viewer.tof import (
+                            ToFCameraHelper,
+                        )
+
                         serial = Aravis.get_device_serial_nbr(0)
                         camera = ToFCameraHelper(serial)
                     else:
@@ -311,7 +323,11 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                 else:
                     ch = chr(ch)  # Convert to char
             else:
-                ch = click.prompt("Please enter a command", type=click.types.STRING, show_choices=click.Choice(["n", "s", "t", "q"]))
+                ch = click.prompt(
+                    "Please enter a command",
+                    type=click.types.STRING,
+                    show_choices=click.Choice(["n", "s", "t", "q"]),
+                )
             if ch == "q":
                 break
             elif ch == "e":
@@ -337,7 +353,10 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                     if camera.cached_image is None or camera.cached_image_time is None:
                         log.warning("Cannot save image yet, none cached!")
                         break
-                    file_path = camera_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
+                    file_path = (
+                        camera_dir
+                        / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
+                    )
                     image = camera.cached_image
                     if tof and isinstance(camera, ToFCameraHelper):
                         # We handle this camera specially, since it is two cameras...
@@ -345,14 +364,20 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                         if image_intensity is not None:
                             # Save intensity image as a seperate camera
                             camera_dir_intensity = out_dir / f"{camera.name}-intensity"
-                            file_path_intensity = camera_dir_intensity / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
+                            file_path_intensity = (
+                                camera_dir_intensity
+                                / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
+                            )
                             camera_dir_intensity.mkdir(exist_ok=True)
                             if cv2.imwrite(str(file_path_intensity), image_intensity):
                                 log.debug(f"Saved {file_path_intensity}")
                     elif ch == "t":
                         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
                         image = cvt_tonemap_image(image)
-                        file_path = camera_dir / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
+                        file_path = (
+                            camera_dir
+                            / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
+                        )
                     file_path.parent.mkdir(exist_ok=True)
                     if cv2.imwrite(str(file_path), image):
                         log.debug(f"Saved {file_path}")
@@ -362,7 +387,10 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
         for camera in cameras:
             try:
                 if tof:
-                    from machine_vision_acquisition_python.viewer.tof import ToFCameraHelper
+                    from machine_vision_acquisition_python.viewer.tof import (
+                        ToFCameraHelper,
+                    )
+
                     if isinstance(camera, ToFCameraHelper):
                         camera.camera.stop()
                 else:

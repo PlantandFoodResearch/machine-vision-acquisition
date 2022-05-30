@@ -155,11 +155,13 @@ def restart_dhcp():
     ]
     try:
         subprocess.check_call(command_restart)
-        output_str_lines = subprocess.check_output(command_status).decode().splitlines(keepends=False)
+        output_str_lines = (
+            subprocess.check_output(command_status).decode().splitlines(keepends=False)
+        )
         output = {}
         for line in output_str_lines:
-            items = line.split('=')
-            output.update({items[0]:items[1]})
+            items = line.split("=")
+            output.update({items[0]: items[1]})
         if output["ActiveState"] != "active":
             raise ValueError("Failed to get DHCP server running")
     except subprocess.CalledProcessError as exc:

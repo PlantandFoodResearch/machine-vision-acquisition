@@ -6,7 +6,11 @@ import numpy as np
 import time
 import click
 from timeit import default_timer as timer
-from machine_vision_acquisition_python.viewer.cli import CameraHelper, resize_with_aspect_ratio, DISPLAY_SIZE_WIDTH
+from machine_vision_acquisition_python.viewer.cli import (
+    CameraHelper,
+    resize_with_aspect_ratio,
+    DISPLAY_SIZE_WIDTH,
+)
 
 log = logging.getLogger(__name__)
 
@@ -55,9 +59,7 @@ class ToFCameraHelper(CameraHelper):
             # Start Grey / Z streaming.
             types = [tof.FrameType.BGR, tof.FrameType.RADIAL, tof.FrameType.INTENSITY]
             # types = [tof.FrameType.BGR]
-            tof.selectStreams(
-                self.camera, types  # type: ignore
-            )
+            tof.selectStreams(self.camera, types)  # type: ignore
             self.camera.start()
         except Exception as exc:
             log.exception("Could not open camera")
@@ -66,7 +68,9 @@ class ToFCameraHelper(CameraHelper):
 
     def get_single_image(self):
         self.get_cache_all_rgb_intensity_radial()
-        image = resize_with_aspect_ratio(self.cached_image_rgb, width=DISPLAY_SIZE_WIDTH)
+        image = resize_with_aspect_ratio(
+            self.cached_image_rgb, width=DISPLAY_SIZE_WIDTH
+        )
         return image
 
     def get_cache_all_rgb_intensity_radial(self):
@@ -82,9 +86,15 @@ class ToFCameraHelper(CameraHelper):
             frames = self.camera.getFrames()
             self.cached_image_time = time.strftime("%Y-%m-%dT%H%M%S")
             # See note about BGR / RGB
-            self.cached_image_rgb = cv2.flip(np.asarray(getFrame(frames, tof.FrameType.BGR)), flipCode=-1)  # flip & mirror
-            self.cached_image_intensity = np.asarray(getFrame(frames, tof.FrameType.INTENSITY))
-            self.cached_image_radial = np.asarray(getFrame(frames, tof.FrameType.RADIAL))
+            self.cached_image_rgb = cv2.flip(
+                np.asarray(getFrame(frames, tof.FrameType.BGR)), flipCode=-1
+            )  # flip & mirror
+            self.cached_image_intensity = np.asarray(
+                getFrame(frames, tof.FrameType.INTENSITY)
+            )
+            self.cached_image_radial = np.asarray(
+                getFrame(frames, tof.FrameType.RADIAL)
+            )
             self.cached_image = self.cached_image_rgb  # For compatability
             end = timer()
             log.debug(f"Acquiring image(s) for {self.name} took: {end - start}")
@@ -94,11 +104,15 @@ class ToFCameraHelper(CameraHelper):
             raise ValueError("Must cache self.cached_image_intensity first")
         self.cached_image_intensity_normalised = np.copy(self.cached_image_intensity)
         # we will take "most" of the data and scale it to the ful range and "clip" the rest.
-        gain_scalar = (255/np.quantile(self.cached_image_intensity_normalised, 0.975)).astype(np.uint8)
+        gain_scalar = (
+            255 / np.quantile(self.cached_image_intensity_normalised, 0.975)
+        ).astype(np.uint8)
         if gain_scalar > 25:
             log.warning(f"get_normalised_intensity using high gain of {gain_scalar}")
         self.cached_image_intensity_normalised *= gain_scalar
-        self.cached_image_intensity_normalised = np.clip(self.cached_image_intensity_normalised, 0, 255)
+        self.cached_image_intensity_normalised = np.clip(
+            self.cached_image_intensity_normalised, 0, 255
+        )
         return self.cached_image_intensity_normalised
 
 
@@ -117,11 +131,7 @@ def get_first_valid_kea_camera() -> ToFCameraHelper:
 
 @click.command()
 @click.option(
-    "--serial",
-    help="KeaCamera serial to try",
-    default=None,
-    required=False,
-    type=str
+    "--serial", help="KeaCamera serial to try", default=None, required=False, type=str
 )
 def cli(serial: str):
     """
