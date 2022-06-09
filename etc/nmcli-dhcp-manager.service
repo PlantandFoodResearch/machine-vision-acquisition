@@ -1,11 +1,13 @@
 [Unit]
 Description=nmcli-dhcp-manager
-After=syslog.target network.target
+Wants=network-online.target
+After=network-online.target
 
 [Service]
-Type=simple
+Type=oneshot
 User=user
 WorkingDirectory=/opt/nmcli-dhcp-manager
+ExecStartPre=/bin/sleep 30
 ExecStart=/opt/nmcli-dhcp-manager/.venv/bin/python /opt/nmcli-dhcp-manager/nmcli-dhcp-manager.py --devices enp4s0
 Restart=on-failure
 
