@@ -1,6 +1,6 @@
-ARG DISTRO=focal
+ARG DISTRO=humble-desktop
 
-FROM ubuntu:${DISTRO} as ros-base
+FROM osrf/ros:${DISTRO} as ros-base
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV \
@@ -15,11 +15,9 @@ RUN apt-get update --quiet \
         software-properties-common \
         curl \
         gnupg \
-        lsb-release
-
-RUN add-apt-repository universe \
-    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-    && apt-get update --quiet \
-    && apt-get install --yes --quiet --no-install-recommends \
-        ros-foxy-ros-base
+        lsb-release \
+        build-essential \
+        git \
+        cmake \ 
+        ninja-build \ 
+        meson

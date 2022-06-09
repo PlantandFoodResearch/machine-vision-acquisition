@@ -13,4 +13,5 @@ RUN apt-get update && apt-get install -y \
         ros-noetic-camera-aravis \
     && rm -rf /var/lib/apt/lists/*
 
+ENV ROS_NAMESPACE=cam1
 CMD ["rosrun", "camera_aravis", "cam_aravis"]

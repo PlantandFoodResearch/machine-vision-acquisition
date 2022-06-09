@@ -38,6 +38,10 @@ services:
   ros-dev:
     network_mode: "host"
     restart: always
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
     environment:
       - DISPLAY
       - LIBGL_ALWAYS_INDIRECT
@@ -48,8 +52,24 @@ services:
     # Using variables here allows them to be over-ridden, but have sane defaults
       - ${SRC_DIR:-.}:/src
     command: [ "bash", "-c", "sleep infinity"]
-  ros1-dev:
+  ros-aravis-dev:
     network_mode: "host"
+    restart: always
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+    build:
+      dockerfile: ros/ros-aravis.dockerfile
+      context: ./docker
+    volumes:
+    # Using variables here allows them to be over-ridden, but have sane defaults
+      - ${SRC_DIR:-.}:/src
+    command: [ "bash", "-c", "sleep infinity"]
+  ros1-dev:
     restart: always
     environment:
       - DISPLAY
@@ -82,7 +102,8 @@ services:
     environment:
       - "ROS_HOSTNAME=rua-x-imageplaypen.pfr.co.nz"
       - "ROS_MASTER_URI=http://rua-x-imageplaypen.pfr.co.nz:11311"
-  bridge:
+    command: [ "bash", "-c", "sleep infinity"]
+  ros-bridge:
     image: ros:foxy-ros1-bridge
     extra_hosts:
       - "rua-x-imageplaypen.pfr.co.nz:10.20.100.40"
