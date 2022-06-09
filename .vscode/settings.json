@@ -48,5 +48,13 @@
         "streambuf": "cpp",
         "typeinfo": "cpp"
     },
-    "cmake.sourceDirectory": "${workspaceFolder}/examples"
+    "cmake.sourceDirectory": "${workspaceFolder}/examples",
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "datacapture*.json"
+            ],
+            "url": "./etc/datacapture.schema.json"
+        }
+    ]
 }
