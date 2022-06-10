@@ -1,13 +1,16 @@
 import click
+import json
 from pathlib import Path
 
 @click.command()
 @click.option(
     "--config",
     "-c",
-    help="Path to YAML configuration file for capture",
+    "config_path",
+    help="Path to JSON configuration file for capture",
     required=True,
     type=click.types.Path(file_okay=True, exists=True, dir_okay=False, readable=True, path_type=Path)
 )
-def cli(config: Path):
-    pass
+def cli(config_path: Path):
+    config = json.loads(config_path.read_text())
+    

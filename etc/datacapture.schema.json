@@ -5,8 +5,18 @@
   "additionalProperties": false,
   "definitions": {},
   "properties": {
-    "camera":{
-      "description": "An Aravis compatible camera"
+    "cameras":{
+      "description": "List of Aravis compatible camera properties",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "serial":{
+            "type": "string"
+          }
+        },
+        "required":["serial"]
+      }
     }
   }
 }
