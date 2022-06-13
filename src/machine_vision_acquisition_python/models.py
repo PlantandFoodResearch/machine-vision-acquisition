@@ -8,6 +8,7 @@ class Camera(BaseModel):
 class Config(BaseSettings):
     version: str
     cameras: List[Camera]
+    ptp_sync: Optional[bool]
 
     # This enables auto load from environment variables
     class Config:

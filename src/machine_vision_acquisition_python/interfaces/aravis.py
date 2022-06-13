@@ -83,44 +83,43 @@ class CameraHelper:
         )
 
     def set_default_camera_options(self):
+        self.select_pixel_format()
+
+        self.camera.set_frame_rate(5.0)  # type: ignore
+        self.camera.set_acquisition_mode(Aravis.AcquisitionMode.SINGLE_FRAME)
+        self.camera.set_trigger("Software")  # type: ignore
+        # self.camera.set_exposure_time(1000)
+
         if self.camera.is_gv_device():
             self.camera.gv_set_packet_size_adjustment(
                 Aravis.GvPacketSizeAdjustment.ON_FAILURE
             )
             self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
-        self.select_pixel_format()
-        self.camera.set_frame_rate(5.0)  # type: ignore
-        self.camera.set_acquisition_mode(Aravis.AcquisitionMode.CONTINUOUS)
-        # self.camera.set_trigger()
-        # self.camera.set_exposure_time(1000)
 
-        # self.camera.set_trigger("Software")  # type: ignore
+
         self.stream: ArvStream = self.camera.create_stream()  # type: ignore
-        self.stream.connect("new-buffer", self._stream_cb, weakref.ref(self))
+        self.stream.connect("new-buffer", self._stream_buffer_new_cb, weakref.ref(self))
+        self.stream.set_emit_signals(True)  # type: ignore
         payload = self.camera.get_payload()
         # allocate buffers
         for i in range(10):
             self.stream.push_buffer(Aravis.Buffer.new_allocate(payload))
         self.camera.start_acquisition()
-        time.sleep(0.1)
-        self.stream.set_emit_signals(True)  # type: ignore
         # Ensure they are stopped on destruction
         self._finalizer = weakref.finalize(self, Aravis.Stream.set_emit_signals, self.stream, False)  # type: ignore
-        log.debug(f"main thread: {threading.get_ident()}")
-        # self.camera.software_trigger()
-        time.sleep(0.5)
+        log.debug(f"started streaming and cb_processing for {self.name}")
+
+
+    def calc_fps_blocking(self, blocking_time_s = 1.0):
         with self.lock:
             self._frame_counter = 0
             start = timer()
-        # self.camera.software_trigger()
-        time.sleep(5.0)
+        time.sleep(blocking_time_s)
         with self.lock:
             end = timer()
             counter = self._frame_counter
             self._frame_counter = 0
-        log.info(f"FPS: {counter / (end - start)}")
-        time.sleep(1.0)
-
+        log.debug(f"FPS: {counter / (end - start)}")
 
 
     def settle_auto_exposure(self, length_s=5):
@@ -139,7 +138,7 @@ class CameraHelper:
             log.info(f"Could not run settle_auto_exposure for {self.name}")
 
     @staticmethod
-    def _stream_cb(stream: ArvStream, user_data: weakref.ReferenceType["CameraHelper"]):
+    def _stream_buffer_new_cb(stream: ArvStream, user_data: weakref.ReferenceType["CameraHelper"]):
         """This is called in the Aravis Thread. The debugger seems to not work here, so keep it simple!"""
         camera = user_data()
         if not camera:
@@ -154,7 +153,7 @@ class CameraHelper:
                 log.warning("_stream_cb failed to pop SUCCESS buffer")
                 return
             # We have a proper buffer
-            # log.info(f"Valid buffer received ({camera.name}) ts: {buffer.get_timestamp()}")
+            log.debug(f"Valid buffer received ({camera.name}) ts(device): {buffer.get_timestamp()}, ts(system): {buffer.get_system_timestamp()}")
             with camera.lock:
                 camera._frame_counter += 1
         finally:
