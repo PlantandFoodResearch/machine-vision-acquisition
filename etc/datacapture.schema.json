@@ -5,6 +5,9 @@
   "additionalProperties": false,
   "definitions": {},
   "properties": {
+    "version":{
+      "type": "integer"
+    },
     "cameras":{
       "description": "List of Aravis compatible camera properties",
       "type": "array",
