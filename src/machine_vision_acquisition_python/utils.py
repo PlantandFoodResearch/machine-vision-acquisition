@@ -32,7 +32,7 @@ def check_ptp_sync(cameras: typing.List[CameraHelper]):
                 }
             }
         )
-    log.info(cam_stats)
+    log.debug(cam_stats)
     return cam_stats
 
 

@@ -1,0 +1,117 @@
+{
+  "title": "Config",
+  "description": "Configuration for machine_vision_acquisition_python.capture CLI program",
+  "type": "object",
+  "properties": {
+    "version": {
+      "title": "Version",
+      "env_names": [
+        "pycapture_version"
+      ],
+      "type": "string"
+    },
+    "cameras": {
+      "title": "Cameras",
+      "description": "Cameras to open",
+      "env_names": [
+        "pycapture_cameras"
+      ],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Camera"
+      }
+    },
+    "ptp_sync": {
+      "title": "Ptp Sync",
+      "description": "Attempt to enable GigE PTP sync between cameras",
+      "env_names": [
+        "pycapture_ptp_sync"
+      ],
+      "type": "boolean"
+    },
+    "shared_params": {
+      "title": "Shared Params",
+      "description": "GenICam parameters to apply to all opened cameras. Note: the order will attempt to be respected",
+      "env_names": [
+        "pycapture_shared_params"
+      ],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/GenICamParam"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "cameras"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "GenICamParam": {
+      "title": "GenICamParam",
+      "description": "Generic GenICam parameter",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "description": "GenICam parameter name, case sensitive",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "val_type": {
+          "title": "Val Type",
+          "description": "Force type when setting, otherwise a guess will be attempted",
+          "enum": [
+            "str",
+            "int",
+            "float",
+            "bool"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "Camera": {
+      "title": "Camera",
+      "description": "Aravis camera configuration",
+      "type": "object",
+      "properties": {
+        "serial": {
+          "title": "Serial",
+          "type": "string"
+        },
+        "params": {
+          "title": "Params",
+          "description": "GenICam parameters to this camera. Note: the order will attempt to be respected",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GenICamParam"
+          }
+        }
+      },
+      "required": [
+        "serial"
+      ]
+    }
+  }
+}
