@@ -1,9 +1,29 @@
+<head>
+    <meta charset=utf-8 />
+    <title></title>
+    <style>
+        div.container {
+            display: inline-block;
+        }
+
+        p {
+            text-align: center;
+        }
+    </style>
+</head>
+
 <body>
     <div class="container">
         <div class="row">
-            <div class="col-lg-8  offset-lg-2">
-                <h3 class="mt-5">Live Streaming</h3>
-                <img src="{{ url_for('video_feed') }}" width="100%">
+            <h3 class="mt-5">Live Streaming</h3>
+            <div class="column">
+                <img src="{{ url_for('video_feed_1') }}" width="480">
+            </div>
+            <div class="column">
+                <img src="{{ url_for('video_feed_2') }}" width="480">
+            </div>
+            <div class="column">
+                <img src="{{ url_for('video_feed_3') }}" width="480">
             </div>
         </div>
     </div>

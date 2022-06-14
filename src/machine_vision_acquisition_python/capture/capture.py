@@ -65,7 +65,7 @@ def temp_display_latest(cameras: List[CameraHelper]):
         cv2.imshow(camera.name, resize_with_aspect_ratio(camera.cached_image, width=480))
 
 
-def liveview_web(camera: CameraHelper):
+def liveview_web(cameras: List[CameraHelper]):
     """Attempt to live stream images to webpage"""
     web_path = (Path.cwd() / "web").resolve()
     template_path = web_path / "templates"
@@ -73,7 +73,7 @@ def liveview_web(camera: CameraHelper):
         raise FileNotFoundError(f"Could not find template folder")
     app = Flask(__name__, static_folder=web_path, template_folder=str(template_path))
 
-    def gen_frames():  
+    def gen_frames(camera: CameraHelper):  
         while True:
             if camera.cached_image is None:
                 time.sleep(0.5)
@@ -87,16 +87,23 @@ def liveview_web(camera: CameraHelper):
                 img = cvt_tonemap_image(img)
                 ret, buffer = cv2.imencode('.jpg', img)
                 frame = buffer.tobytes()
-                log.info(f"sending web frame {len(buffer)/1024} kb")
+                # log.info(f"sending web frame {len(buffer)/1024} kb")
                 yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
     @app.route('/')
     def index():
         return render_template("index.html")
 
-    @app.route('/video_feed')
-    def video_feed():
-        return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    @app.route('/video_feed_1')
+    def video_feed_1():
+        return Response(gen_frames(cameras[0]), mimetype='multipart/x-mixed-replace; boundary=frame')
+    @app.route('/video_feed_2')
+    def video_feed_2():
+        return Response(gen_frames(cameras[1]), mimetype='multipart/x-mixed-replace; boundary=frame')
+    @app.route('/video_feed_3')
+    def video_feed_3():
+        return Response(gen_frames(cameras[2]), mimetype='multipart/x-mixed-replace; boundary=frame')
+
     log.info(f"starting webserver")
     try:
         app.run(host="0.0.0.0", debug=False)
@@ -124,7 +131,7 @@ def main(config: Config):
         camera.start_capturing()
     try:
         time.sleep(5.0)
-        liveview_web(cameras[1])
+        liveview_web(cameras)
         while True:
             res = cv2.waitKey(10)
     except KeyboardInterrupt as _:
