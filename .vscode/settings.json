@@ -52,9 +52,9 @@
     "json.schemas": [
         {
             "fileMatch": [
-                "datacapture*.json"
+                "*config.json"
             ],
-            "url": "./etc/datacapture.schema.json"
+            "url": "./etc/config.schema.json"
         }
     ]
 }
