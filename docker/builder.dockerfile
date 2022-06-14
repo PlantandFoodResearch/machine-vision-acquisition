@@ -70,7 +70,11 @@ RUN apt-get update \
 
 # Add piwheels to prevent/reduce compiling on-device (e.g. otherwise installing opencv can take days!)
 RUN echo "[global]\n" \
-         "extra-index-url=https://www.piwheels.org/simple\n"\ > /etc/pip.conf
+         "extra-index-url=https://www.piwheels.org/simple\n"\ > /etc/pip.conf \
+    # Enable poetry
+    && python3 -m pip install -U poetry \
+    # Disable virtual env creation (as we are inside docker)
+    && poetry config virtualenvs.create false
 
 CMD [ "sleep", "infinity" ]
 
