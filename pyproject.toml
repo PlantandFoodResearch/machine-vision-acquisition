@@ -13,6 +13,7 @@ opencv-python = "^4.5"
 click = "^8.1.2"
 pydantic = "^1.9.1"
 pandas = "^1.4.2"
+Flask = "^2.1.2"
 
 [tool.poetry.dev-dependencies]
 

@@ -8,7 +8,7 @@ import multiprocessing
 from machine_vision_acquisition_python.converter.processing import cvt_tonemap_image
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 

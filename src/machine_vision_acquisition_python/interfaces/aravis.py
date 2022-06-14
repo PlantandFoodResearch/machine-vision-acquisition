@@ -7,6 +7,7 @@ import time
 import typing
 import weakref
 import threading
+import queue
 import pandas as pd
 import numpy as np
 from timeit import default_timer as timer
@@ -24,7 +25,6 @@ from machine_vision_acquisition_python.models import GenICamParam
 
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
 
 PIXEL_FORMAT_PREFERENCE_LIST = [
     "BayerRG12Packed",
@@ -33,6 +33,7 @@ PIXEL_FORMAT_PREFERENCE_LIST = [
     "BayerRG8",
 ]
 _MAX_PARAM_WRITE_ATTEMPTS = 2
+_LOG_FPS_PERIOD_S = 10
 
 class ArvStream(Aravis.Stream, GObject.GObject): pass
 
@@ -64,7 +65,7 @@ class CameraHelper:
             log.debug(f"Could not open camera: {name}")
             raise exc
         self.name = (
-            f"{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
+            f"{self.camera.get_vendor_name()}-{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
         )
         log.debug(f"Opened {self.name}")
         # Attempt to ensure camera is stopped on exit
@@ -74,7 +75,10 @@ class CameraHelper:
         self.pixel_format_str: typing.Optional[str] = None
         self.lock = threading.RLock()
         self._frame_counter = 0
+        self._frame_counter_reset_time_s = time.perf_counter()
+        self._fps: typing.Optional[float] = None
         self.latest_buffer: typing.Optional[Aravis.Buffer] = None
+        self.latest_buffer_queue: queue.Queue[Aravis.Buffer] = queue.Queue(maxsize=1)  # We use a queue of 1 to allow stream thread to pass buffers back to main
         self.set_default_camera_options()
 
     def select_pixel_format(self):
@@ -121,16 +125,15 @@ class CameraHelper:
         log.debug(f"setup stream and cb_processing for {self.name}")
 
 
-    def calc_fps_blocking(self, blocking_time_s = 1.0):
+    def update_fps(self):
+        if self._frame_counter < 5:
+            raise ValueError(f"Not enough frames captured to get an FPS value")
         with self.lock:
+            delta_s = time.perf_counter() - self._frame_counter_reset_time_s
+            self._fps = self._frame_counter / delta_s
+            self._frame_counter_reset_time_s = time.perf_counter()
             self._frame_counter = 0
-            start = timer()
-        time.sleep(blocking_time_s)
-        with self.lock:
-            end = timer()
-            counter = self._frame_counter
-            self._frame_counter = 0
-        log.debug(f"FPS: {counter / (end - start)}")
+        log.info(f"FPS ({self.name}): {self._fps}")
 
 
     def settle_auto_exposure(self, length_s=5):
@@ -166,13 +169,18 @@ class CameraHelper:
             # We have a proper buffer
             log.debug(f"Valid buffer received ({camera.name}) ts(device): {buffer.get_timestamp()}, ts(system): {buffer.get_system_timestamp()}")
             # Interact with camera object in thread-safe manner. Swaps out latest buffer and increments buffer count
-            previous_buffer = None
             with camera.lock:
                 camera._frame_counter += 1
-                previous_buffer = camera.latest_buffer
-                camera.latest_buffer = buffer
-            if previous_buffer is not None:
-                stream.push_buffer(camera.latest_buffer)  # type: ignore
+                if camera.latest_buffer_queue.full():
+                    old = camera.latest_buffer_queue.get_nowait()
+                    stream.push_buffer(old)  # type: ignore
+                    del old
+                camera.latest_buffer_queue.put_nowait(buffer)
+            if time.perf_counter() - camera._frame_counter_reset_time_s > _LOG_FPS_PERIOD_S:
+                camera.update_fps()
+        except queue.Full as _:
+            log.debug(f"Dropping buffer since processing queue is full")
+            stream.push_buffer(buffer)  # type: ignore
         except Exception as _:
             stream.push_buffer(buffer)  # type: ignore
             raise
@@ -180,11 +188,39 @@ class CameraHelper:
 
     def start_capturing(self):
         """Best effort of getting images started...."""
+        with self.lock:
+            self._frame_counter_reset_time_s = time.perf_counter()
+            self._frame_counter = 0
         self.camera.start_acquisition()
         try:
             self.camera.software_trigger()
         except Exception as _:
             pass
+
+    def run_process_buffer(self, shutdown_event: threading.Event):
+        """Run idefinitely converting buffers as they are delivered into cv2 images"""
+        log.info(f"Starting image processing thread for {self.name}")
+        fps_counter = 0
+        fps_start = time.perf_counter()
+        while not shutdown_event.is_set():
+            # wait for a buffer
+            try:
+                buffer = self.latest_buffer_queue.get(timeout=0.1)
+            except queue.Empty as _:
+                continue
+            # At this stage we have a buffer, we must return it to the pool.
+            try:
+                self.cached_image = convert_with_lock(buffer)
+                self.cached_image_time = pd.Timestamp(buffer.get_system_timestamp(), unit="ns").to_datetime64()
+                fps_counter += 1
+                if time.perf_counter() - fps_start > _LOG_FPS_PERIOD_S and fps_counter > 0:
+                    fps = fps_counter/(time.perf_counter() - fps_start)
+                    fps_counter = 0
+                    fps_start = time.perf_counter()
+                    log.info(f"improc thread ({self.name}) FPS: {fps}")
+            finally:
+                self.stream.push_buffer(buffer)  # type: ignore
+        log.info(f"Stopping image processing thread for {self.name}")
 
     def set_parameter(self, param: GenICamParam) -> None:
         """Attempts to set GenICam parameters"""
