@@ -81,6 +81,20 @@ class CameraHelper:
         self.latest_buffer_queue: queue.Queue[Aravis.Buffer] = queue.Queue(maxsize=1)  # We use a queue of 1 to allow stream thread to pass buffers back to main
         self.set_default_camera_options()
 
+
+    @property
+    def device(self):
+        device = self.camera.get_device()
+        if device is not None and isinstance(device, Aravis.Device):
+            return device
+        raise AttributeError(f"Could not access Aravis.Device for {self.name}")
+
+
+    def load_default_settings(self):
+        res = self.device.set_string_feature_value("UserSetSelector", "Default")  # type: ignore
+        res = self.device.execute_command("UserSetLoad")  # type: ignore
+
+
     def select_pixel_format(self):
         """Attempt to use best option pixel format"""
         supported_pixel_formats_str: typing.List[
@@ -167,7 +181,7 @@ class CameraHelper:
                 log.warning("_stream_cb failed to pop SUCCESS buffer")
                 return
             # We have a proper buffer
-            log.debug(f"Valid buffer received ({camera.name}) ts(device): {buffer.get_timestamp()}, ts(system): {buffer.get_system_timestamp()}")
+            log.info(f"Valid buffer received ({camera.name}) ts(device): {buffer.get_timestamp()}, ts(system): {buffer.get_system_timestamp()}")
             # Interact with camera object in thread-safe manner. Swaps out latest buffer and increments buffer count
             with camera.lock:
                 camera._frame_counter += 1
@@ -232,7 +246,10 @@ class CameraHelper:
             raise ValueError(f"Feature {param.name} not availible on {self.name}")
         feature_access_mode: Aravis.GcAccessMode = arv_device.get_feature(param.name).get_actual_access_mode()  # type: ignore
         if feature_access_mode is not Aravis.GcAccessMode.RW and feature_access_mode is not Aravis.GcAccessMode.WO:
-            raise AttributeError(f"Feature {param.name} access mode is {feature_access_mode}")
+            # Bug in Aravis: https://github.com/AravisProject/aravis/issues/684
+            # Sometimes writeable nodes are reported as read-only. Let us be pythonic and ask for forgiveness!
+            log.warning(f"Attempting to write to {param.name}[{feature_access_mode.to_string()}] on {self.name}")
+            # raise AttributeError(f"Feature {param.name} access mode is {feature_access_mode}")
 
         attempts = 0
         while True:
@@ -307,9 +324,19 @@ class CameraHelper:
 def get_camera_by_serial(serial: str) -> CameraHelper:
     """Relies on that on module load Aravis.update_device_list() is called"""
     for i in range(Aravis.get_n_devices()):
-        if serial == str(Aravis.get_device_serial_nbr(i)):
+        dev_serial_str = Aravis.get_device_serial_nbr(i)
+        # Sometimes the serial is in HEX
+        try:
+            dev_serial_hextodec_str = str(int(dev_serial_str,16))
+        except Exception as _:
+            dev_serial_hextodec_str = None
+        if serial == dev_serial_str:
             log.debug(f"Found device at address {Aravis.get_device_address(i)} to match serial {serial}")
             return CameraHelper(Aravis.get_device_id(i))
+        elif serial == dev_serial_hextodec_str:
+            log.debug(f"Found device at address {Aravis.get_device_address(i)} to match HEX serial {dev_serial_str}")
+            return CameraHelper(Aravis.get_device_id(i))
+
     raise ValueError(f"Could not find Aravis camera by serial: {serial}")
 
 
