@@ -1,0 +1,43 @@
+{
+  "version": "1",
+  "cameras": [
+    {
+      "serial" : "15122686",
+      "params": [
+        {"name": "AcquisitionFrameRateEnabled", "value": true, "val_type": "bool"},
+        {"name": "AcquisitionFrameRateAuto", "value": "Off"},
+        {"name": "AcquisitionFrameRate", "value": 1.0},
+        {"name": "LineSelector", "value" : "Line3"},
+        {"name": "LineMode", "value" : "Output"}
+      ]
+    },
+    {
+      "serial" : "17581532",
+      "params": [
+        {"name": "TriggerMode", "value" : "On"},
+        {"name": "TriggerSource", "value" : "Line3"}
+      ]
+    },
+    {
+      "serial" : "17581531",
+      "params": [
+        {"name": "TriggerMode", "value" : "On"},
+        {"name": "TriggerSource", "value" : "Line3"}
+      ]
+    },
+    {
+      "serial" : "17581572",
+      "params": [
+        {"name": "TriggerMode", "value" : "On"},
+        {"name": "TriggerSource", "value" : "Line3"}
+      ]
+    }
+  ],
+  "shared_params": [
+    {"name": "AcquisitionMode", "value": "Continuous"},
+    {"name": "ExposureAuto", "value": "Off"},
+    {"name": "GainAuto", "value": "Off"},
+    {"name": "ExposureTime", "value": 12500},
+    {"name": "Gain", "value": 30.0}
+  ]
+}
