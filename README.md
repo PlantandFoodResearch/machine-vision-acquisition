@@ -83,9 +83,9 @@ DeviceFactoryReset executed
 ```
 
 ## Tools
-To use these tools, if they are python, ensure you have the dependencies installed. Either run `python3 -m pip install -e .` in the repo root or manually do this. Use a virtual environment if not in a Docker container.
+To use these tools, if they are python, ensure you have the dependencies installed. Either run `python3 -m poetry install` or `python3 -m pip install -e .` in the repo root or manually do this. Use a virtual environment if not in a Docker container.
 
-### CLI Image Viewer and Save tool
+### CLI Image Viewer and Save tool (Calibration Image Acquirer)
 Mainly in [cli.py](./src/machine_vision_acquisition_python/viewer/cli.py). View CLI help for info:
 ```
 python3 -m machine_vision_acquisition_python.viewer --help
@@ -115,6 +115,12 @@ DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu
 Mainly in [tof.py](./src/machine_vision_acquisition_python/viewer/tof.py). View CLI help for info:
 ```
 python3 -m machine_vision_acquisition_python.viewer.tof --help
+```
+
+### Batch Image converter
+Mainly in [converter](./src/machine_vision_acquisition_python/converter/__main__.py). View CLI help for info:
+```
+python3 -m machine_vision_acquisition_python.converter --help
 ```
 
 ### Systemd service to restart DHCP and NMCLI connections
