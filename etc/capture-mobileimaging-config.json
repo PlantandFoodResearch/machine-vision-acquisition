@@ -4,37 +4,51 @@
     {
       "serial" : "15122686",
       "params": [
+        {"name": "AcquisitionMode", "value": "SingleFrame"},
         {"name": "AcquisitionFrameRateEnabled", "value": true, "val_type": "bool"},
         {"name": "AcquisitionFrameRateAuto", "value": "Off"},
-        {"name": "AcquisitionFrameRate", "value": 1.0},
+        {"name": "AcquisitionFrameRate", "value": 0.1},
+        {"name": "TriggerSource", "value" : "Software"},
         {"name": "LineSelector", "value" : "Line3"},
-        {"name": "LineMode", "value" : "Output"}
+        {"name": "LineMode", "value" : "Output"},
+        {"name": "LineSource", "value" : "ExposureActive"}
       ]
     },
     {
       "serial" : "17581532",
       "params": [
+        {"name": "AcquisitionMode", "value": "Continuous"},
         {"name": "TriggerMode", "value" : "On"},
-        {"name": "TriggerSource", "value" : "Line3"}
+        {"name": "TriggerSource", "value" : "Line3"},
+        {"name": "TriggerActivation", "value" : "RisingEdge"},
+        {"name": "LineSelector", "value" : "Line3"},
+        {"name": "LineMode", "value" : "Input"}
       ]
     },
     {
       "serial" : "17581531",
       "params": [
+        {"name": "AcquisitionMode", "value": "Continuous"},
         {"name": "TriggerMode", "value" : "On"},
-        {"name": "TriggerSource", "value" : "Line3"}
+        {"name": "TriggerSource", "value" : "Line3"},
+        {"name": "TriggerActivation", "value" : "RisingEdge"},
+        {"name": "LineSelector", "value" : "Line3"},
+        {"name": "LineMode", "value" : "Input"}
       ]
     },
     {
       "serial" : "17581572",
       "params": [
+        {"name": "AcquisitionMode", "value": "Continuous"},
         {"name": "TriggerMode", "value" : "On"},
-        {"name": "TriggerSource", "value" : "Line3"}
+        {"name": "TriggerSource", "value" : "Line3"},
+        {"name": "TriggerActivation", "value" : "RisingEdge"},
+        {"name": "LineSelector", "value" : "Line3"},
+        {"name": "LineMode", "value" : "Input"}
       ]
     }
   ],
   "shared_params": [
-    {"name": "AcquisitionMode", "value": "Continuous"},
     {"name": "ExposureAuto", "value": "Off"},
     {"name": "GainAuto", "value": "Off"},
     {"name": "ExposureTime", "value": 12500},
