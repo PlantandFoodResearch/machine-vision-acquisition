@@ -117,23 +117,58 @@ def main(config: Config):
     # Set all camera properties
     set_camera_params(config=config, cameras=cameras)
 
+    shutdown = threading.Event()
+    atexit.register(shutdown.set)
+    soft_trigger_cameras: List[CameraHelper] = []
+    external_trigger_cameras: List[CameraHelper] = []
+    for camera in cameras:
+        t = threading.Thread(target=camera.run_process_buffer, args=(shutdown,))
+        t.start()
+        if camera.camera.get_trigger_source() == "Software":
+            soft_trigger_cameras.append(camera)
+        else:
+            external_trigger_cameras.append(camera)
+
+
     if config.ptp_sync:
         enable_ptp_sync(cameras)
     elif config.ptp_sync == False:
         disable_ptp_sync(cameras)
+
     ts = []
-    shutdown = threading.Event()
-    atexit.register(shutdown.set)
+
+    # Stop all
     for camera in cameras:
-        ts.append(time.perf_counter_ns())
-        t = threading.Thread(target=camera.run_process_buffer, args=(shutdown,))
-        t.start()
+        camera.camera.stop_acquisition()
+    time.sleep(0.5)
+    # Start software triggered
+    for camera in soft_trigger_cameras:
         camera.start_capturing()
+        camera.camera.software_trigger()
+    time.sleep(0.5)
+    # Start external triggered
+    for camera in external_trigger_cameras:
+        camera.start_capturing()
+    time.sleep(0.5)
+    # for camera in cameras:
+    #     camera.camera.stop_acquisition()
+    #     ts.append(time.perf_counter_ns())
+    #     t = threading.Thread(target=camera.run_process_buffer, args=(shutdown,))
+    #     t.start()
+    #     camera.start_capturing()
     try:
-        time.sleep(5.0)
-        liveview_web(cameras)
+        # liveview_web(cameras)
+        test_print_all(cameras)
         while True:
-            res = cv2.waitKey(10)
+            time.sleep(5.0)
+            cam: CameraHelper = soft_trigger_cameras[0]
+            cam.camera.software_trigger()
+            # res = cv2.waitKey(100)
+            # if res <= 0:
+            #     continue
+            # ch = chr(res)
+            # if ch == "t":
+            #     cam.camera.software_trigger()
     except KeyboardInterrupt as _:
         pass
     finally:
@@ -146,3 +181,44 @@ def main(config: Config):
     #     temp_display_latest(cameras)
     # # log.info(f"ts: {ts}")
     pass
+
+def test_stop_all(cameras: List[CameraHelper]):
+    for camera in cameras:
+        camera.camera.stop_acquisition()
+
+def test_start_all(cameras: List[CameraHelper]):
+    for camera in cameras:
+        camera.camera.start_acquisition()
+
+def test_trigger_all(cameras: List[CameraHelper]):
+    for camera in cameras:
+        camera.camera.software_trigger()
+
+def test_cont_all(cameras: List[CameraHelper]):
+    import gi
+    gi.require_version("Aravis", "0.8")
+    from gi.repository import Aravis
+    for camera in cameras:
+        camera.camera.set_acquisition_mode(Aravis.AcquisitionMode.CONTINUOUS)
+
+def test_sing_all(cameras: List[CameraHelper]):
+    import gi
+    gi.require_version("Aravis", "0.8")
+    from gi.repository import Aravis
+    for camera in cameras:
+        camera.camera.set_acquisition_mode(Aravis.AcquisitionMode.SINGLE_FRAME)
+
+def test_print_all(cameras: List[CameraHelper]):
+    for camera in cameras:
+        device = camera.device
+        str_out = f"""
+        {camera.name}:
+        AcquisitionMode: {device.get_feature('AcquisitionMode').get_value_as_string()}
+        TriggerMode: {device.get_feature('TriggerMode').get_value_as_string()}
+        TriggerSource: {device.get_feature('TriggerSource').get_value_as_string()}
+        SingleFrameAcquisitionMode: {device.get_feature('SingleFrameAcquisitionMode').get_value_as_string()}\n
+        AcquisitionStatusSelector: {device.get_feature('AcquisitionStatusSelector').get_value_as_string()}\n
+        AcquisitionFrameRateEnabled: {device.get_feature('AcquisitionFrameRateEnabled').get_value_as_string()}\n
+        AcquisitionStatus: {device.get_feature('AcquisitionStatus').get_value_as_string()}\n
+        """
+        log.info(str_out)

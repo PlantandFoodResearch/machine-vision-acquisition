@@ -141,7 +141,9 @@ class CameraHelper:
 
     def update_fps(self):
         if self._frame_counter < 5:
-            raise ValueError(f"Not enough frames captured to get an FPS value")
+            log.debug(f"Not enough frames captured to get an FPS value")
+            self._fps = -1
+            return
         with self.lock:
             delta_s = time.perf_counter() - self._frame_counter_reset_time_s
             self._fps = self._frame_counter / delta_s
@@ -201,15 +203,15 @@ class CameraHelper:
         return
 
     def start_capturing(self):
-        """Best effort of getting images started...."""
+        """Does not start or trigger the cameras"""
         with self.lock:
             self._frame_counter_reset_time_s = time.perf_counter()
             self._frame_counter = 0
         self.camera.start_acquisition()
-        try:
-            self.camera.software_trigger()
-        except Exception as _:
-            pass
+        # try:
+        #     self.camera.software_trigger()
+        # except Exception as _:
+        #     pass
 
     def run_process_buffer(self, shutdown_event: threading.Event):
         """Run idefinitely converting buffers as they are delivered into cv2 images"""
@@ -248,7 +250,7 @@ class CameraHelper:
         if feature_access_mode is not Aravis.GcAccessMode.RW and feature_access_mode is not Aravis.GcAccessMode.WO:
             # Bug in Aravis: https://github.com/AravisProject/aravis/issues/684
             # Sometimes writeable nodes are reported as read-only. Let us be pythonic and ask for forgiveness!
-            log.warning(f"Attempting to write to {param.name}[{feature_access_mode.to_string()}] on {self.name}")
+            log.warning(f"Attempting to write to {param.name}[{Aravis.GcAccessMode.to_string(feature_access_mode)}] on {self.name}")
             # raise AttributeError(f"Feature {param.name} access mode is {feature_access_mode}")
 
         attempts = 0
