@@ -5,9 +5,9 @@
       "serial" : "15122686",
       "params": [
         {"name": "AcquisitionMode", "value": "SingleFrame"},
-        {"name": "AcquisitionFrameRateEnabled", "value": true, "val_type": "bool"},
+        {"name": "AcquisitionFrameRateEnabled", "value": false, "val_type": "bool"},
         {"name": "AcquisitionFrameRateAuto", "value": "Off"},
-        {"name": "AcquisitionFrameRate", "value": 0.1},
+        {"name": "AcquisitionFrameRate", "value": 1.0},
         {"name": "TriggerSource", "value" : "Software"},
         {"name": "LineSelector", "value" : "Line3"},
         {"name": "LineMode", "value" : "Output"},
@@ -17,7 +17,7 @@
     {
       "serial" : "17581532",
       "params": [
-        {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "AcquisitionMode", "value": "SingleFrame"},
         {"name": "TriggerMode", "value" : "On"},
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
@@ -28,7 +28,7 @@
     {
       "serial" : "17581531",
       "params": [
-        {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "AcquisitionMode", "value": "SingleFrame"},
         {"name": "TriggerMode", "value" : "On"},
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
@@ -39,7 +39,7 @@
     {
       "serial" : "17581572",
       "params": [
-        {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "AcquisitionMode", "value": "SingleFrame"},
         {"name": "TriggerMode", "value" : "On"},
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
