@@ -67,7 +67,7 @@ def get_image_sharpness(image: cv2.Mat, size=60):
     
     # grab the dimensions of the image and use the dimensions to
     # derive the center (x, y)-coordinates
-    h, w, _ = image.shape
+    h, w = image.shape
     (cX, cY) = (int(w / 2.0), int(h / 2.0))
     # compute the FFT to find the frequency transform, then shift
     # the zero frequency component (i.e., DC component located at
@@ -88,14 +88,27 @@ def get_image_sharpness(image: cv2.Mat, size=60):
     mean = np.mean(magnitude)
     return mean
 
+
+def get_image_max(image: cv2.Mat):
+    max = np.iinfo(image.dtype.type).max  # type: ignore
+    return float(np.max(image)/max)
+
+
 def get_image_mean(image: cv2.Mat):
     """Gets mean image value, converting to gray if required first"""
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    mean = np.mean(gray)
-    return mean
+    channels = image.shape[-1] if image.ndim == 3 else 1
+    if channels == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    mean = np.mean(image)
+    max = np.iinfo(image.dtype.type).max  # type: ignore
+    return float(mean/max)
+
 
 def get_image_std(image: cv2.Mat):
     """Gets standard deviation image values, converting to gray if required first"""
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    std = np.std(gray)
-    return std
+    channels = image.shape[-1] if image.ndim == 3 else 1
+    if channels == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    std = np.std(image)
+    max = np.iinfo(image.dtype.type).max  # type: ignore
+    return float(std/max)

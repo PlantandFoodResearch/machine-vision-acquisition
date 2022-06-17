@@ -7,7 +7,7 @@ import logging
 import json
 import multiprocessing
 from machine_vision_acquisition_python.converter.processing import cvt_tonemap_image
-from machine_vision_acquisition_python.utils import get_image_mean, get_image_sharpness, get_image_std
+from machine_vision_acquisition_python.utils import get_image_mean, get_image_sharpness, get_image_std, get_image_max
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -63,9 +63,10 @@ def cli(input_path: Path, output_path: typing.Optional[Path], tonemap: bool):
         ).resolve()
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
+    output_file_path = output_path / "stats.json"
 
     # get going
-    process_folder(input_path, output_path, tonemap)
+    process_folder_stats(input_path, output_file_path)
 
 
 def process_folder(input_path: Path, output_path: Path, tonemap: bool):
@@ -107,20 +108,20 @@ def process_file(in_path: Path, out_dir: Path, tonemap: bool):
 
 def process_folder_stats(input_path: Path, output_path: Path):
     process_args = []
-    result_queue: multiprocessing.Queue[typing.Dict] = multiprocessing.Queue()
+    # result_queue: multiprocessing.Queue[typing.Dict] = multiprocessing.Queue()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     # Gather work
     for file_path in input_path.rglob("*.png"):
-        process_args.append((file_path.resolve(), result_queue))
+        process_args.append((file_path.resolve(),))
 
     # Multiprocess
     pool = multiprocessing.Pool(processes=8)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
-        pool.starmap(process_file_stats, process_args)
+        resuls = pool.starmap(process_file_stats, process_args)
         log.info("Done :)")
         # Gather results
-        resuls = gather_results(result_queue)
+        # resuls = gather_results(result_queue)
         output_path.write_text(json.dumps(resuls))
     except KeyboardInterrupt as _:
         log.warning("Aborting processing")
@@ -130,25 +131,27 @@ def process_folder_stats(input_path: Path, output_path: Path):
         pool.join()
 
 
-def process_file_stats(in_path: Path, result_queue: multiprocessing.Queue[typing.Dict] ):
+def process_file_stats(in_path: Path):
     """
     Multoprocessing entrypoint for doing the grunt work
     """
     log.debug(f"Processing {in_path}")
     image = cv2.imread(str(in_path), cv2.IMREAD_ANYDEPTH)
     sharpness = get_image_sharpness(image)
+    max = get_image_max(image)
     mean = get_image_mean(image)
     std = get_image_std(image)
     outputs = {
         "file_name": str(in_path.name),
         "sharpness": sharpness,
+        "max": max,
         "mean": mean,
         "std": std
     }
-    result_queue.put(outputs)
+    return outputs
 
 
-def gather_results(result_queue: multiprocessing.Queue[typing.Dict]):
+def gather_results(result_queue: multiprocessing.Queue):
     results = []
     while not result_queue.empty():
         entry = result_queue.get_nowait()
