@@ -14,12 +14,15 @@ from machine_vision_acquisition_python.converter.processing import (
     unpack_BayerRG12Packed,
 )
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
-from machine_vision_acquisition_python.interfaces.chronoptics import ToFCameraHelper
+log = logging.getLogger(__name__)
 import gi
 gi.require_version("Aravis", "0.8")
 from gi.repository import Aravis
-
-log = logging.getLogger(__name__)
+try:
+    from machine_vision_acquisition_python.interfaces.chronoptics import ToFCameraHelper
+except ImportError as _:
+    log.warning(f"Failed to import chronoptics")
+    ToFCameraHelper = None
 
 DISPLAY_SIZE_WIDTH = 1280
 
@@ -101,8 +104,11 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
     if factory_reset:
         for camera in cameras:
             try:
-                camera.camera.execute_command("DeviceFactoryReset")  # type: ignore
-                log.info(f"DeviceFactoryReset {camera.name}")
+                # Try userset loading first
+                camera.load_default_settings()
+                log.info(f"Loaded default settings for {camera.name}")
+                # camera.camera.execute_command("DeviceFactoryReset")  # type: ignore
+                # log.info(f"DeviceFactoryReset {camera.name}")
             except Exception as exc:
                 log.exception(f"Failed to reset {camera.name}", exc_info=exc)
                 pass  # best effort
