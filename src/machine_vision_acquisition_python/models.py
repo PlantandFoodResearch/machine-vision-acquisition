@@ -1,5 +1,6 @@
+from pathlib import Path
 from typing import List, Optional, Union, Literal
-from pydantic import BaseModel, BaseSettings, Field, validator, root_validator
+from pydantic import BaseModel, BaseSettings, Field, validator, root_validator, DirectoryPath
 
 
 class GenICamParam(BaseModel):
@@ -38,6 +39,7 @@ class Config(BaseSettings):
     cameras: List[Camera] = Field(description="Cameras to open")
     ptp_sync: Optional[bool] = Field(description="Attempt to enable GigE PTP sync between cameras")
     shared_params: Optional[List[GenICamParam]] = Field(description="GenICam parameters to apply to all opened cameras. Note: the order will attempt to be respected")
+    output_directory: DirectoryPath = Field(description="Path to output folder to use as root. Will be created (including parents) if required")
 
     # This enables auto load from environment variables
     class Config:

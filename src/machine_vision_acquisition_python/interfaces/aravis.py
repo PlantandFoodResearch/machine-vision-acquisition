@@ -10,6 +10,7 @@ import threading
 import queue
 import pandas as pd
 import numpy as np
+import re
 from timeit import default_timer as timer
 import gi
 gi.require_version("Aravis", "0.8")
@@ -39,7 +40,7 @@ class ArvStream(Aravis.Stream, GObject.GObject): pass
 
 
 def convert_with_lock(buf: Aravis.Buffer) -> typing.Optional[cv2.Mat]:
-    """Convert an Aravis.Buffer to cv2.Mat, whilst the caller MUST hold a lock on the buffer"""
+    """Convert an Aravis.Buffer to cv2.Mat, whilst the caller MUST hold a lock on the buffer. Return image is python memory managed (safe)"""
     ### Credit: https://github.com/SintefRaufossManufacturing/python-aravis/blob/master/aravis.py#L181
     if not buf:
         return None
@@ -67,10 +68,15 @@ class CameraHelper:
         self.name = (
             f"{self.camera.get_vendor_name()}-{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
         )
+        self.short_name = (
+            f"{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
+        )
+        # Remove all non word and hyphen characters so that it is more pathsafe (still not guaranteed)
+        self.short_name = re.sub(r"([^\w\s]|\s+)", '-', self.short_name)
         log.debug(f"Opened {self.name}")
         # Attempt to ensure camera is stopped on exit
         self._finalizer = weakref.finalize(self, Aravis.Camera.stop_acquisition, self.camera)
-        self.cached_image: typing.Optional[typing.Any] = None
+        self.cached_image: typing.Optional[cv2.Mat] = None
         self.cached_image_time: typing.Optional[np.datetime64] = None
         self.pixel_format_str: typing.Optional[str] = None
         self.lock = threading.RLock()
@@ -149,7 +155,7 @@ class CameraHelper:
             self._fps = self._frame_counter / delta_s
             self._frame_counter_reset_time_s = time.perf_counter()
             self._frame_counter = 0
-        log.info(f"FPS ({self.name}): {self._fps}")
+        log.debug(f"FPS ({self.name}): {self._fps}")
 
 
     def settle_auto_exposure(self, length_s=5):
@@ -183,10 +189,11 @@ class CameraHelper:
                 log.warning("_stream_cb failed to pop SUCCESS buffer")
                 return
             # We have a proper buffer
-            log.info(f"Valid buffer received ({camera.name}) ts(device): {buffer.get_timestamp()}, ts(system): {buffer.get_system_timestamp()}")
+            # log.debug(f"Valid buffer received ({camera.name}) ts(device): {buffer.get_timestamp()}, ts(system): {buffer.get_system_timestamp()}")
             # Interact with camera object in thread-safe manner. Swaps out latest buffer and increments buffer count
             with camera.lock:
                 camera._frame_counter += 1
+                # if there is still an unprocessed buffer in the queue, return it.
                 if camera.latest_buffer_queue.full():
                     old = camera.latest_buffer_queue.get_nowait()
                     stream.push_buffer(old)  # type: ignore
@@ -233,7 +240,7 @@ class CameraHelper:
                     fps = fps_counter/(time.perf_counter() - fps_start)
                     fps_counter = 0
                     fps_start = time.perf_counter()
-                    log.info(f"improc thread ({self.name}) FPS: {fps}")
+                    log.debug(f"improc thread ({self.name}) FPS: {fps}")
             finally:
                 self.stream.push_buffer(buffer)  # type: ignore
         log.info(f"Stopping image processing thread for {self.name}")

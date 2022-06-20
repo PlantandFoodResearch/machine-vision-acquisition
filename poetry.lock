@@ -170,6 +170,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
+name = "sshkeyboard"
+version = "2.3.1"
+description = "sshkeyboard"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "typing-extensions"
 version = "4.2.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -203,7 +211,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "bbc124620492c6b6b019b16e723721cbbf18218545507cf99da3f97edc8eec9c"
+content-hash = "966913d353de2132569d4d5d2c8c92af8c3e472715ccc0eef540e0568285ebc8"
 
 [metadata.files]
 click = [
@@ -376,6 +384,10 @@ pytz = [
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
+]
+sshkeyboard = [
+    {file = "sshkeyboard-2.3.1-py3-none-any.whl", hash = "sha256:05ec2cb116bd9c4a7c17d7add4a5af74e12eb2add24c110608cb90f6812692f9"},
+    {file = "sshkeyboard-2.3.1.tar.gz", hash = "sha256:3273be5b2fde7f8d2ea075d40e1981104ac0928d7b77a848756f08d0e66a3d9f"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},

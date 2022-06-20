@@ -3,14 +3,20 @@ import json
 import logging
 import cv2
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Dict, List
 import atexit
 import time
+import functools
+import numpy as np
 from pathlib import Path
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper, get_camera_by_serial
 from machine_vision_acquisition_python.converter.processing import resize_with_aspect_ratio, cvt_tonemap_image
 from machine_vision_acquisition_python.models import Config, GenICamParam
 from machine_vision_acquisition_python.utils import enable_ptp_sync, disable_ptp_sync
+from machine_vision_acquisition_python.capture.keyboard import register_callback
+# Temporary helpers
+from machine_vision_acquisition_python.capture.misc import *
 
 # temp
 from flask import Flask, render_template
@@ -28,9 +34,23 @@ log = logging.getLogger(__name__)
     required=True,
     type=click.types.Path(file_okay=True, exists=True, dir_okay=False, readable=True, path_type=Path)
 )
-def cli(config_path: Path):
-    config: Config = Config(**json.loads(config_path.read_text()))
-    log.info(f"Opening {len(config.cameras)} cameras")
+@click.option(
+    "--output",
+    "-o",
+    "out_dir",
+    help="Path to output folder to use as root. Will be created (including parents) if required",
+    required=False,
+    type=click.types.Path(file_okay=False, dir_okay=True, readable=True, path_type=Path)
+)
+def cli(config_path: Path, out_dir: Optional[Path]):
+    if out_dir is None:
+        out_dir = Path.cwd() / "tmp"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = out_dir.resolve()
+    json_config: dict = json.loads(config_path.read_text())
+    out_dir = Path(json_config.setdefault("output_directory", str(out_dir)))
+    config: Config = Config(**json_config)
+    log.info(f"Opening {len(config.cameras)} cameras with {out_dir}")
     main(config)
 
 
@@ -59,57 +79,39 @@ def set_camera_params(config: Config, cameras: List[CameraHelper]) -> None:
             camera.set_parameter(param)
 
 
+def save_current_frame(camera: CameraHelper, out_dir: Optional[Path] = None, debayer: bool = True):
+    if out_dir is None:
+        out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
+    with camera.lock:
+        if camera.cached_image is None:
+            log.warning(f"cannot save image for {camera.name}, none cached")
+            return
+        image = camera.cached_image.copy()
+        image_time = camera.cached_image_time
+    if image is None or image_time is None:
+        log.warning(f"cannot save image for {camera.name}, none cached")
+        return
+    if debayer:
+        image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+    # Will result in  YYYY-MM-DDTHH-mm-ss-[ms*3] e.g. 2022-06-20T00-22-44-209
+    pathsafe_time_str = np.datetime_as_string(image_time, unit="ms").replace(":", "-").replace(".", "-")
+    # Will give names like: "Grasshopper3-GS3-U3-23S6C-15122686-2022-06-20T00-22-44-209.png"
+    img_path = out_dir / f"{camera.short_name}-{pathsafe_time_str}.png"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if not cv2.imwrite(str(img_path), image):
+        raise ValueError("Could not write PNG file")
+    log.info(f"{img_path.name} saved")
 
-def temp_display_latest(cameras: List[CameraHelper]):
+
+def save_all_images_cb(cameras: List[CameraHelper], root_dir: Path):
+    # Cache the worker pool
+    if getattr(save_all_images_cb, "executor", None) is None:
+        save_all_images_cb.executor = ThreadPoolExecutor(max_workers=len(cameras))
+    exec: ThreadPoolExecutor = save_all_images_cb.executor
     for camera in cameras:
-        cv2.imshow(camera.name, resize_with_aspect_ratio(camera.cached_image, width=480))
-
-
-def liveview_web(cameras: List[CameraHelper]):
-    """Attempt to live stream images to webpage"""
-    web_path = (Path.cwd() / "web").resolve()
-    template_path = web_path / "templates"
-    if not template_path.exists():
-        raise FileNotFoundError(f"Could not find template folder")
-    app = Flask(__name__, static_folder=web_path, template_folder=str(template_path))
-
-    def gen_frames(camera: CameraHelper):  
-        while True:
-            if camera.cached_image is None:
-                time.sleep(0.5)
-                continue
-            else:
-                with camera.lock:
-                    img = camera.cached_image.copy()
-                    camera.cached_image = None
-                img = cv2.cvtColor(img, cv2.COLOR_BayerRG2RGB)
-                img = resize_with_aspect_ratio(img, width=480)
-                img = cvt_tonemap_image(img)
-                ret, buffer = cv2.imencode('.jpg', img)
-                frame = buffer.tobytes()
-                # log.info(f"sending web frame {len(buffer)/1024} kb")
-                yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
-    @app.route('/')
-    def index():
-        return render_template("index.html")
-
-    @app.route('/video_feed_1')
-    def video_feed_1():
-        return Response(gen_frames(cameras[0]), mimetype='multipart/x-mixed-replace; boundary=frame')
-    @app.route('/video_feed_2')
-    def video_feed_2():
-        return Response(gen_frames(cameras[1]), mimetype='multipart/x-mixed-replace; boundary=frame')
-    @app.route('/video_feed_3')
-    def video_feed_3():
-        return Response(gen_frames(cameras[2]), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-    log.info(f"starting webserver")
-    try:
-        app.run(host="0.0.0.0", debug=False)
-    finally:
-        log.info(f"stopping webserver")
-
+        out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
+        job = functools.partial(save_current_frame, camera, out_dir)
+        exec.submit(job)
 
 
 def main(config: Config):
@@ -157,12 +159,14 @@ def main(config: Config):
     #     t.start()
     #     camera.start_capturing()
     try:
-        # liveview_web(cameras)
-        test_print_all(cameras)
-        while True:
-            time.sleep(5.0)
-            cam: CameraHelper = soft_trigger_cameras[0]
-            cam.camera.software_trigger()
+        cb = functools.partial(save_all_images_cb, cameras, config.output_directory)
+        register_callback("s", cb)
+        liveview_web(cameras)
+        # test_print_all(cameras)
+        # while True:
+            # time.sleep(5.0)
+            # cam: CameraHelper = soft_trigger_cameras[0]
+            # cam.camera.software_trigger()
             # res = cv2.waitKey(100)
             # if res <= 0:
             #     continue
@@ -182,43 +186,3 @@ def main(config: Config):
     # # log.info(f"ts: {ts}")
     pass
 
-def test_stop_all(cameras: List[CameraHelper]):
-    for camera in cameras:
-        camera.camera.stop_acquisition()
-
-def test_start_all(cameras: List[CameraHelper]):
-    for camera in cameras:
-        camera.camera.start_acquisition()
-
-def test_trigger_all(cameras: List[CameraHelper]):
-    for camera in cameras:
-        camera.camera.software_trigger()
-
-def test_cont_all(cameras: List[CameraHelper]):
-    import gi
-    gi.require_version("Aravis", "0.8")
-    from gi.repository import Aravis
-    for camera in cameras:
-        camera.camera.set_acquisition_mode(Aravis.AcquisitionMode.CONTINUOUS)
-
-def test_sing_all(cameras: List[CameraHelper]):
-    import gi
-    gi.require_version("Aravis", "0.8")
-    from gi.repository import Aravis
-    for camera in cameras:
-        camera.camera.set_acquisition_mode(Aravis.AcquisitionMode.SINGLE_FRAME)
-
-def test_print_all(cameras: List[CameraHelper]):
-    for camera in cameras:
-        device = camera.device
-        str_out = f"""
-        {camera.name}:
-        AcquisitionMode: {device.get_feature('AcquisitionMode').get_value_as_string()}
-        TriggerMode: {device.get_feature('TriggerMode').get_value_as_string()}
-        TriggerSource: {device.get_feature('TriggerSource').get_value_as_string()}
-        SingleFrameAcquisitionMode: {device.get_feature('SingleFrameAcquisitionMode').get_value_as_string()}\n
-        AcquisitionStatusSelector: {device.get_feature('AcquisitionStatusSelector').get_value_as_string()}\n
-        AcquisitionFrameRateEnabled: {device.get_feature('AcquisitionFrameRateEnabled').get_value_as_string()}\n
-        AcquisitionStatus: {device.get_feature('AcquisitionStatus').get_value_as_string()}\n
-        """
-        log.info(str_out)
