@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 from timeit import default_timer as timer
 import machine_vision_acquisition_python.utils
-from machine_vision_acquisition_python.converter.processing import (
+from machine_vision_acquisition_python.process.processing import (
     cvt_tonemap_image,
     resize_with_aspect_ratio,
     unpack_BayerRG12,
