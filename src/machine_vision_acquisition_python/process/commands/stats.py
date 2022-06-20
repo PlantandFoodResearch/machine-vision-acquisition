@@ -48,18 +48,18 @@ log = logging.getLogger(__name__)
 )
 def stats(input_path: Path, output_path: typing.Optional[Path]):
     """
-    Generate basic numerical stats from folders of images (reccursive)
+    Generate basic numerical stats from folders of images (reccursive) and output xlsx file
     """
 
     # Ensure output exists
+    datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     if output_path is None:
-        datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         output_path = (
-            input_path / "outputs" / f"stats-{datetime_path}"
+            input_path / "outputs"
         ).resolve()
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
-    output_file_path = output_path / "stats.xlsx"
+    output_file_path = output_path / f"{datetime_path}-stats.xlsx"
 
     # get going
     process_folder_stats(input_path, output_file_path)
