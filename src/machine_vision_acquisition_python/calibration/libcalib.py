@@ -108,8 +108,3 @@ def read_camera_extrinsics(transform: dict):
     tvec = [t["x"], t["y"], t["z"]]
     tvec = np.matrix(tvec)
     return rvec, tvec
-
-
-# TEMP ONLY!
-if __name__ == "__main__":
-    read_calib_parameters(Path(TEMP_FILE_PATH))

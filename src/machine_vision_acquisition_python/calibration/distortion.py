@@ -37,25 +37,33 @@ class Undistorter:
             Any intermediate value yields an intermediate result between those two extreme cases.
         """
         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(
-            self.calibration.cameraMatrix, self.calibration.distCoeffs, shape, alpha, shape
+            self.calibration.cameraMatrix,
+            self.calibration.distCoeffs,
+            shape,
+            alpha,
+            shape,
         )
         if newcameramtx is None or roi is None:
             raise ValueError(f"Unable to compute optimal matrix")
         # fix up some type casting
 
-        self._optimal_matrix = cv2.UMat(np.ndarray((3,3), np.float64, newcameramtx))
+        self._optimal_matrix = cv2.UMat(np.ndarray((3, 3), np.float64, newcameramtx))
         self._roi = roi
 
     @property
     def optimal_matrix(self):
         if self._optimal_matrix is None:
-            raise ValueError("init_optimal_matrix must be called before this can be used")
+            raise ValueError(
+                "init_optimal_matrix must be called before this can be used"
+            )
         return self._optimal_matrix
 
     @property
     def roi(self):
         if self._roi is None:
-            raise ValueError("init_optimal_matrix must be called before this can be used")
+            raise ValueError(
+                "init_optimal_matrix must be called before this can be used"
+            )
         return self._roi
 
     @property
@@ -65,10 +73,15 @@ class Undistorter:
         return True
 
     def undistort(self, image: cv2.Mat) -> cv2.Mat:
-        uncropped = cv2.undistort(image, self.calibration.cameraMatrix, self.calibration.distCoeffs, newCameraMatrix=self.optimal_matrix)
+        uncropped = cv2.undistort(
+            image,
+            self.calibration.cameraMatrix,
+            self.calibration.distCoeffs,
+            newCameraMatrix=self.optimal_matrix,
+        )
         # crop
         # Todo: is this needed? Could be ineffecient
         uncropped_mat = cv2.UMat.get(uncropped)
         x, y, w, h = self.roi
-        dst = uncropped_mat[y:y+h, x:x+w]
+        dst = uncropped_mat[y : y + h, x : x + w]
         return dst
