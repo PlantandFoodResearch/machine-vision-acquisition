@@ -89,7 +89,7 @@ def undistort(
         out_dir.mkdir(exist_ok=True, parents=True)
         process_args.append((file_path.resolve(), out_dir.resolve(), undistorter))
 
-    pool = multiprocessing.Pool(processes=1)
+    pool = multiprocessing.Pool(processes=4)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         pool.starmap(process_file, process_args)
@@ -108,7 +108,7 @@ def process_file(in_path: Path, out_dir: Path, undistorter: Undistorter):
     if not undistorter.initialised:
         undistorter.init_optimal_matrix(image.shape)
     undistored = undistorter.undistort(image)
-    output_file_path = out_dir / f"{in_path.stem}-undistorted.{in_path.suffix}"
+    output_file_path = out_dir / f"{in_path.stem}-undistorted{in_path.suffix}"
     if not cv2.imwrite(str(output_file_path), undistored):
         raise ValueError(f"Failed to write {output_file_path.name}")
     log.info(f"Undistorted {in_path.name}")

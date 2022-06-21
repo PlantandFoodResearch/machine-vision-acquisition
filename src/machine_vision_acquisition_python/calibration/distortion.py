@@ -48,7 +48,7 @@ class Undistorter:
             raise ValueError(f"Unable to compute optimal matrix")
         # fix up some type casting
 
-        self._optimal_matrix = cv2.UMat(np.ndarray((3, 3), np.float64, newcameramtx))
+        self._optimal_matrix = newcameramtx
         self._roi = roi
 
     @property
@@ -78,8 +78,9 @@ class Undistorter:
             image,
             self.calibration.cameraMatrix,
             self.calibration.distCoeffs,
+            newCameraMatrix=self.optimal_matrix
         )
         if crop:
-            y, x, h, w = self.roi
+            x, y, h, w = self.roi
             result = result[y : y + h, x : x + w]
         return result
