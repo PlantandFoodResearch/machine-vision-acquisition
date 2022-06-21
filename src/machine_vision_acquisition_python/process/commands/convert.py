@@ -62,10 +62,9 @@ def convert(input_path: Path, output_path: typing.Optional[Path], tonemap: bool)
         ).resolve()
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
-    output_file_path = output_path / "stats.json"
 
     # get going
-    process_folder(input_path, output_file_path, tonemap)
+    process_folder(input_path, output_path, tonemap)
 
 
 def process_folder(input_path: Path, output_path: Path, tonemap: bool):
