@@ -36,6 +36,7 @@ class Undistorter:
 
             Any intermediate value yields an intermediate result between those two extreme cases.
         """
+        shape = (shape[0], shape[1])  # drop any potential channel information
         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(
             self.calibration.cameraMatrix,
             self.calibration.distCoeffs,
@@ -72,16 +73,13 @@ class Undistorter:
             return False
         return True
 
-    def undistort(self, image: cv2.Mat) -> cv2.Mat:
-        uncropped = cv2.undistort(
+    def undistort(self, image: cv2.Mat, crop = True) -> cv2.Mat:
+        result = cv2.undistort(
             image,
             self.calibration.cameraMatrix,
             self.calibration.distCoeffs,
-            newCameraMatrix=self.optimal_matrix,
         )
-        # crop
-        # Todo: is this needed? Could be ineffecient
-        uncropped_mat = cv2.UMat.get(uncropped)
-        x, y, w, h = self.roi
-        dst = uncropped_mat[y : y + h, x : x + w]
-        return dst
+        if crop:
+            y, x, h, w = self.roi
+            result = result[y : y + h, x : x + w]
+        return result

@@ -59,7 +59,6 @@ def read_calib_parameters(calibio_json: Path):
         calib = Calibration(serial, cam_matrix, distortion_matrix, rvec, tvec)
         # Use openCV naming
         camera_calibrations.append(calib)
-    log.info("Done")
     return camera_calibrations
 
 
@@ -83,7 +82,7 @@ def read_camera_intrinsics(intrinsics: dict):
     s4 = intrinsics["s4"]["val"]
     tauX = intrinsics["tauX"]["val"]
     tauY = intrinsics["tauY"]["val"]
-    tmp = [[f, 0.0, cx], [0.0, f * ar, cy], [0.0, 0.0, 0.0]]
+    tmp = [[f, 0.0, cx], [0.0, f * ar, cy], [0.0, 0.0, 1.0]]
     cam_matrix = np.matrix(tmp, dtype=np.float64)
     distortion_matrix = np.matrix(
         [k1, k2, p1, p2, k3, k4, k5, k6, s1, s2, s3, s4, tauX, tauY], dtype=np.float64

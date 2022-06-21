@@ -1,4 +1,3 @@
-
 import click
 from pathlib import Path
 import typing
@@ -62,7 +61,9 @@ log = logging.getLogger(__name__)
         resolve_path=True,
     ),
 )
-def undistort(calibio_json_path: Path, input_path: Path, output_path: typing.Optional[Path]):
+def undistort(
+    calibio_json_path: Path, input_path: Path, output_path: typing.Optional[Path]
+):
     """
     Rectify images using CalibIO and OpenCV.
     """
@@ -70,9 +71,7 @@ def undistort(calibio_json_path: Path, input_path: Path, output_path: typing.Opt
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     if output_path is None:
-        output_path = (
-            input_path / "outputs" / f"{datetime_path}"
-        ).resolve()
+        output_path = (input_path / "outputs" / f"{datetime_path}").resolve()
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
 
@@ -82,11 +81,11 @@ def undistort(calibio_json_path: Path, input_path: Path, output_path: typing.Opt
 
     undistorter = Undistorter(calibration)
     for file_path in input_path.rglob("*.png"):
-        image = cv2.imread(str(file_path), cv2.IMREAD_ANYDEPTH)
+        image = cv2.imread(str(file_path))
         if not undistorter.initialised:
             undistorter.init_optimal_matrix(image.shape)
         undistored = undistorter.undistort(image)
-        output_file_path = output_path / f"{file_path.name}-undistorted.png"
+        output_file_path = output_path / f"{file_path.stem}-undistorted.png"
         if not cv2.imwrite(str(output_file_path), undistored):
             raise ValueError(f"Failed to write {output_file_path.name}")
         log.info(f"Undistorted {file_path.name}")
