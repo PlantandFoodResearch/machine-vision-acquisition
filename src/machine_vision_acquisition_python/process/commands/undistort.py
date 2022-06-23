@@ -97,11 +97,11 @@ def undistort(
         if not undistorter.initialised:
             image = cv2.imread(str(file_path))
             undistorter.init_optimal_matrix(image.shape)
-        out_dir = output_path / file_path.parent.relative_to(input_path)
+        out_dir = (output_path / file_path.parent.relative_to(input_path)).resolve()
         out_dir.mkdir(exist_ok=True, parents=True)
-        process_args.append((file_path.resolve(), out_dir.resolve(), undistorter))
+        process_args.append((file_path.resolve(), out_dir, undistorter))
 
-    pool = multiprocessing.Pool(processes=1)
+    pool = multiprocessing.Pool(processes=4)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         pool.starmap(process_file, process_args)
