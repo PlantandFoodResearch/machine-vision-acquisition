@@ -8,7 +8,12 @@ import json
 import pandas as pd
 import multiprocessing
 from machine_vision_acquisition_python.process.processing import cvt_tonemap_image
-from machine_vision_acquisition_python.utils import get_image_mean, get_image_sharpness, get_image_std, get_image_max
+from machine_vision_acquisition_python.utils import (
+    get_image_mean,
+    get_image_sharpness,
+    get_image_std,
+    get_image_max,
+)
 
 
 log = logging.getLogger(__name__)
@@ -54,9 +59,7 @@ def stats(input_path: Path, output_path: typing.Optional[Path]):
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     if output_path is None:
-        output_path = (
-            input_path / "outputs"
-        ).resolve()
+        output_path = (input_path / "outputs").resolve()
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
     output_file_path = output_path / f"{datetime_path}-stats.xlsx"
@@ -79,7 +82,7 @@ def process_folder_stats(input_path: Path, output_path: Path):
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         results = pool.starmap(process_file_stats, process_args)
         log.info("Done :)")
-        df_results =pd.DataFrame.from_records(results)
+        df_results = pd.DataFrame.from_records(results)
         df_results.to_excel(str(output_path), sheet_name="image_stats")
     except KeyboardInterrupt as _:
         log.warning("Aborting processing")
@@ -105,6 +108,6 @@ def process_file_stats(in_path: Path):
         "sharpness": sharpness,
         "max": max,
         "mean": mean,
-        "std": std
+        "std": std,
     }
     return outputs

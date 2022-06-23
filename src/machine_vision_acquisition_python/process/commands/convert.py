@@ -7,7 +7,12 @@ import logging
 import json
 import multiprocessing
 from machine_vision_acquisition_python.process.processing import cvt_tonemap_image
-from machine_vision_acquisition_python.utils import get_image_mean, get_image_sharpness, get_image_std, get_image_max
+from machine_vision_acquisition_python.utils import (
+    get_image_mean,
+    get_image_sharpness,
+    get_image_std,
+    get_image_max,
+)
 
 
 log = logging.getLogger(__name__)
@@ -62,10 +67,9 @@ def convert(input_path: Path, output_path: typing.Optional[Path], tonemap: bool)
         ).resolve()
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
-    output_file_path = output_path / "stats.json"
 
     # get going
-    process_folder(input_path, output_file_path, tonemap)
+    process_folder(input_path, output_path, tonemap)
 
 
 def process_folder(input_path: Path, output_path: Path, tonemap: bool):
