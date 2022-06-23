@@ -30,6 +30,9 @@ log = logging.getLogger(__name__)
     ]
 )
 def cli():
+    """
+    A set of tools to work on folders of images. Check the help for each sub-command for details.
+    """
     pass
 
 

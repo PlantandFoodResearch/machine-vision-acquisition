@@ -19,8 +19,10 @@ services:
     volumes:
     # Using variables here allows them to be over-ridden, but have sane defaults
       - ${SRC_DIR:-.}:/src
-      - ${POWERPLANT_SINK_DIR:-/media/powerplant-sink/}:/output/
+      - ${OUTPUT_DIR:-/media/powerplant-sink/}:/output/
       - "/dev/bus/usb:/dev/bus/usb"  # All USB devices, even when hotplugged
+
+  # This only makes sense if you can locate the Chronoptics SDK
   multi-sdk:
     restart: always
     network_mode: "host"
@@ -34,7 +36,7 @@ services:
     command: [ "bash", "-c", "python3 -m pip install -e /src && sleep infinity"]
     volumes:
       - ${SRC_DIR:-.}:/src
-      - ${POWERPLANT_SINK_DIR:-/media/powerplant-sink/}:/output/
+      - ${OUTPUT_DIR:-/media/powerplant-sink/}:/output/
 
 volumes:
   output:

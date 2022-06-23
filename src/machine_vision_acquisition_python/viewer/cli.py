@@ -4,6 +4,7 @@ import cv2
 import time
 import os
 import typing
+import ctypes
 import numpy as np
 from pathlib import Path
 from timeit import default_timer as timer
@@ -14,9 +15,13 @@ from machine_vision_acquisition_python.process.processing import (
     unpack_BayerRG12,
     unpack_BayerRG12Packed,
 )
-
-
 log = logging.getLogger(__name__)
+try:
+    import gi
+    gi.require_version("Aravis", "0.8")
+    from gi.repository import Aravis
+except ImportError as _:
+    log.error(f"Could not import Aravis, calling most functions will cause exceptions.")
 
 DISPLAY_SIZE_WIDTH = 1280
 PIXEL_FORMAT_PREFERENCE_LIST = [
@@ -25,15 +30,6 @@ PIXEL_FORMAT_PREFERENCE_LIST = [
     "BayerRG16",
     "BayerRG8",
 ]
-
-# temp
-import gi
-
-gi.require_version("Aravis", "0.8")
-from gi.repository import Aravis
-import cv2
-import ctypes
-import numpy as np
 
 
 def convert(buf) -> typing.Optional[cv2.Mat]:
