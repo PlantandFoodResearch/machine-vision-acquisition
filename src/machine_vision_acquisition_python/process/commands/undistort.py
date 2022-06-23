@@ -75,9 +75,16 @@ def undistort(
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
 
-    calibrationts = read_calib_parameters(calibio_json_path)
+    calibrations = read_calib_parameters(calibio_json_path)
+    # Try match serial to folder path
+    for calibration in calibrations:
+        if calibration.serial in str(input_path.resolve()):
+            log.debug(f"matched path component to calibration camera serial {calibration.serial}")
+            break
+    else:
+        log.warning(f"Could not match calibration serials to folder path, using first calibration")
+        calibration = calibrations[0]
     # Todo: fix this somehow camera serial mappings
-    calibration = calibrationts[0]
 
     process_args = []
     undistorter = Undistorter(calibration)

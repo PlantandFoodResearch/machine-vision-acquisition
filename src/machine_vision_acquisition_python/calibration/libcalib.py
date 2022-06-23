@@ -55,7 +55,9 @@ def read_calib_parameters(calibio_json: Path):
         transform = camera["transform"]
         rvec, tvec = read_camera_extrinsics(transform)
         # todo: get serial mappings
-        serial = "unknown"
+        serial =  camera.get("serial", "unknown")
+        if serial == "unknown":
+            log.warning(f"calibration does not reference camera serial, is it present?") 
         calib = Calibration(serial, cam_matrix, distortion_matrix, rvec, tvec)
         # Use openCV naming
         camera_calibrations.append(calib)
