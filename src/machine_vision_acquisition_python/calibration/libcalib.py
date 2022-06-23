@@ -30,16 +30,20 @@ def read_calib_parameters(calibio_json: Path):
     for camera in calib["Calibration"]["cameras"]:
         try:
             polymorphic_name = camera["model"].get("polymorphic_name")
-            if polymorphic_name is None:
+            polymorphic_id = camera["model"].get("polymorphic_id")
+            # for some reason CalibIO outptus polymorphic_id==1 for 'other' cameras (not the first)
+            if polymorphic_name is None and  polymorphic_id != 1:
                 log.warning(
                     f"Skipping invalid camera type, polymorphic_id: {camera['model']['polymorphic_id']}"
                 )
                 continue
-            elif polymorphic_name != "libCalib::CameraModelOpenCV":
-                log.warning(
-                    f"Skipping invalid camera type, polymorphic_name: {polymorphic_name}"
-                )
             else:
+                if polymorphic_name != "libCalib::CameraModelOpenCV":
+                    log.warning(
+                        f"polymorphic_name: {polymorphic_name}"
+                    )
+                if polymorphic_id == 1:
+                    log.warning(f"Using polymorphic_id==1 for camera serial {camera.get('serial', 'unknown')}")
                 valid_calibs.append(camera)
         except:
             log.exception(f"Skipping invalid camera, unknown error")

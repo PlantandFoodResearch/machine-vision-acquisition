@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
     "--calibio-json",
     "-c",
     "calibio_json_path",
-    help="Path to calibio output JSON",
+    help="Path to calibio output JSON. Must contain camera serials to match input path to.",
     required=True,
     type=click.types.Path(
         dir_okay=False,
@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
     "--input",
     "-i",
     "input_path",
-    help="Input path to read images for undistorting from",
+    help="Input path to read images for undistorting from. Must only contain images from a single camera.",
     required=True,
     type=click.types.Path(
         dir_okay=True,
@@ -61,11 +61,14 @@ log = logging.getLogger(__name__)
         resolve_path=True,
     ),
 )
+@click.option(
+    "--force", "-f", help="Use any calibration, even if cannot match serial", is_flag=True, default=False
+)
 def undistort(
-    calibio_json_path: Path, input_path: Path, output_path: typing.Optional[Path]
+    calibio_json_path: Path, input_path: Path, output_path: typing.Optional[Path], force:bool
 ):
     """
-    Rectify images using CalibIO and OpenCV.
+    Rectify images using CalibIO and OpenCV from a single camera.
     """
 
     # Ensure output exists
@@ -82,7 +85,9 @@ def undistort(
             log.debug(f"matched path component to calibration camera serial {calibration.serial}")
             break
     else:
-        log.warning(f"Could not match calibration serials to folder path, using first calibration")
+        if not force:
+            raise ValueError(f"Could not match calibration serials ({[calibration.serial for calibration in calibrations]}) to part of folder path {input_path}")
+        log.warning(f"Could not match calibration serials to folder path, using first calibration (--force specified)")
         calibration = calibrations[0]
     # Todo: fix this somehow camera serial mappings
 
@@ -96,7 +101,7 @@ def undistort(
         out_dir.mkdir(exist_ok=True, parents=True)
         process_args.append((file_path.resolve(), out_dir.resolve(), undistorter))
 
-    pool = multiprocessing.Pool(processes=4)
+    pool = multiprocessing.Pool(processes=1)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         pool.starmap(process_file, process_args)
@@ -115,7 +120,7 @@ def process_file(in_path: Path, out_dir: Path, undistorter: Undistorter):
     if not undistorter.initialised:
         undistorter.init_optimal_matrix(image.shape)
     undistored = undistorter.undistort(image)
-    output_file_path = out_dir / f"{in_path.stem}-undistorted{in_path.suffix}"
+    output_file_path = out_dir / f"{in_path.stem}.undistorted{in_path.suffix}"
     if not cv2.imwrite(str(output_file_path), undistored):
         raise ValueError(f"Failed to write {output_file_path.name}")
     log.info(f"Undistorted {in_path.name}")

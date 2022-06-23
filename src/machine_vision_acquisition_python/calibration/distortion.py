@@ -50,6 +50,18 @@ class Undistorter:
 
         self._optimal_matrix = newcameramtx
         self._roi = roi
+        y, x, h, w = self.roi
+        # OpenCV is inconsistent with width, height or height, width order often :(
+        self._undistorted_size = (w-x, h-y)
+        self._map1, self._map2 = cv2.initUndistortRectifyMap(
+            self.calibration.cameraMatrix,
+            self.calibration.distCoeffs,
+            None,
+            newcameramtx,
+            self._undistorted_size,
+            cv2.CV_32FC1,
+        )
+        pass
 
     @property
     def optimal_matrix(self):
@@ -68,17 +80,33 @@ class Undistorter:
         return self._roi
 
     @property
+    def map1(self):
+        if self._map1 is None:
+            raise ValueError(
+                "init_optimal_matrix must be called before this can be used"
+            )
+        return self._map1
+
+    @property
+    def map2(self):
+        if self._map2 is None:
+            raise ValueError(
+                "init_optimal_matrix must be called before this can be used"
+            )
+        return self._map2
+
+    @property
     def initialised(self):
         if self._optimal_matrix is None or self._roi is None:
             return False
         return True
 
     def undistort(self, image: cv2.Mat, crop = True) -> cv2.Mat:
-        result = cv2.undistort(
+        result = cv2.remap(
             image,
-            self.calibration.cameraMatrix,
-            self.calibration.distCoeffs,
-            newCameraMatrix=self.optimal_matrix
+            self.map1,
+            self.map2,
+            cv2.INTER_LINEAR,
         )
         if crop:
             x, y, h, w = self.roi

@@ -32,11 +32,12 @@
             "args": [
                 "undistort",
                 "--input",
-                "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/undistort",
+                "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/images/",
                 "--calibio-json",
                 "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/calibration-images/caloutput.json",
                 "--output",
-                "${workspaceFolder}/tmp/undistort"
+                "${workspaceFolder}/tmp/undistort",
+                "--force"
             ],
             "justMyCode": true
         },
