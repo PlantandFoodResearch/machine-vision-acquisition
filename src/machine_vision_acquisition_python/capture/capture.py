@@ -43,6 +43,13 @@ log = logging.getLogger(__name__)
     type=click.types.Path(file_okay=False, dir_okay=True, readable=True, path_type=Path)
 )
 def cli(config_path: Path, out_dir: Optional[Path]):
+    """
+    Basic camera capturing from a config file. Once loaded, will attempt to open and set all parameters, then begin acquisition.
+    Can host basic webpage to preview the live camera output.
+
+    Hotkeys while running:\n
+    - s: Save current frame to disk (uses `output`)\n
+    """
     if out_dir is None:
         out_dir = Path.cwd() / "tmp"
     out_dir.mkdir(parents=True, exist_ok=True)
