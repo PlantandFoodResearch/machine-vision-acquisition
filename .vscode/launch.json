@@ -64,7 +64,7 @@
             "module": "machine_vision_acquisition_python.capture",
             "args": [
                 "--config",
-                "${workspaceFolder}/etc/capture-mobileimaging-config.json"
+                "${workspaceFolder}/etc/capture-fake-config.json"
             ],
             "justMyCode": true
         },

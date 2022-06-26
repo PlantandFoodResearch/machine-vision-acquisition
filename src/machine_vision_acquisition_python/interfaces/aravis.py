@@ -19,8 +19,9 @@ import cv2
 from machine_vision_acquisition_python.converter.processing import (
     cvt_tonemap_image,
     resize_with_aspect_ratio,
-    unpack_BayerRG12,
-    unpack_BayerRG12Packed,
+    buffer_to_numpy_8bit,
+    buffer_to_numpy_16bit,
+    buffer_to_numpy_16bit_packed,
 )
 from machine_vision_acquisition_python.models import GenICamParam
 
@@ -49,9 +50,11 @@ def convert_with_lock(buf: Aravis.Buffer) -> typing.Optional[cv2.Mat]:
     height = buf.get_image_height()
     width = buf.get_image_width()
     if pixel_format == Aravis.PIXEL_FORMAT_BAYER_RG_12_PACKED:
-        image = unpack_BayerRG12Packed(raw_data_ptr, height, width)
+        image = buffer_to_numpy_16bit_packed(raw_data_ptr, height, width)
     elif pixel_format == Aravis.PIXEL_FORMAT_BAYER_RG_12:
-        image = unpack_BayerRG12(raw_data_ptr, height, width)
+        image = buffer_to_numpy_16bit(raw_data_ptr, height, width)
+    elif pixel_format == Aravis.PIXEL_FORMAT_BAYER_RG_8:
+        image = buffer_to_numpy_8bit(raw_data_ptr, height, width)
     else:
         raise ValueError(f"Unsupported pixel format: {pixel_format}")
     # return a copy so that buffer memory can be released without causing havoc

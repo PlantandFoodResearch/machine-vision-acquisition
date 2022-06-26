@@ -4,7 +4,7 @@ import typing
 import numpy as np
 
 
-def unpack_BayerRG12Packed(raw_data_ptr, height: int, width: int):
+def buffer_to_numpy_16bit_packed(raw_data_ptr, height: int, width: int):
     # Motivation / Credit: https://stackoverflow.com/a/70525330
     # BUG: The pixel formats in the above example were not working. Used http://softwareservices.flir.com/BFS-U3-200S6/latest/Model/public/ImageFormatControl.html
     raw_data = np.frombuffer(raw_data_ptr, np.uint8)
@@ -22,8 +22,16 @@ def unpack_BayerRG12Packed(raw_data_ptr, height: int, width: int):
     return image
 
 
-def unpack_BayerRG12(raw_data_ptr, height: int, width: int):
+def buffer_to_numpy_16bit(raw_data_ptr, height: int, width: int):
     ptr = ctypes.cast(raw_data_ptr, ctypes.POINTER(ctypes.c_uint16))
+    image = np.ctypeslib.as_array(
+        ptr, (height, width)
+    )
+    return image
+
+
+def buffer_to_numpy_8bit(raw_data_ptr, height: int, width: int):
+    ptr = ctypes.cast(raw_data_ptr, ctypes.POINTER(ctypes.c_uint8))
     image = np.ctypeslib.as_array(
         ptr, (height, width)
     )

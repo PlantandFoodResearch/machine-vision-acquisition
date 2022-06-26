@@ -10,8 +10,8 @@ import machine_vision_acquisition_python.utils
 from machine_vision_acquisition_python.converter.processing import (
     cvt_tonemap_image,
     resize_with_aspect_ratio,
-    unpack_BayerRG12,
-    unpack_BayerRG12Packed,
+    buffer_to_numpy_16bit,
+    buffer_to_numpy_16bit_packed,
 )
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
 log = logging.getLogger(__name__)
