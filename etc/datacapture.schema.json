@@ -1,0 +1,25 @@
+{
+  "$comment": "This defines the basic parameters for the datacapture app",
+  "$id": "http://plantandfood.pfr.co.nz/bioengineering/machinevision/schema#",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "additionalProperties": false,
+  "definitions": {},
+  "properties": {
+    "version":{
+      "type": "integer"
+    },
+    "cameras":{
+      "description": "List of Aravis compatible camera properties",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "serial":{
+            "type": "string"
+          }
+        },
+        "required":["serial"]
+      }
+    }
+  }
+}

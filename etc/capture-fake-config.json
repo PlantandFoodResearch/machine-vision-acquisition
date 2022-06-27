@@ -1,0 +1,17 @@
+{
+  "version": "1",
+  "cameras": [
+    {
+      "serial" : "1",
+      "params": [
+        {"name": "ExposureTimeAbs", "value": 12500.0},
+        {"name": "GainRaw", "value": 0, "val_type": "int"}
+      ]
+    }
+  ],
+  "shared_params": [
+    {"name": "AcquisitionMode", "value": "Continuous"},
+    {"name": "AcquisitionFrameRate", "value": 1.0},
+    {"name": "GainAuto", "value": "Off"}
+  ]
+}

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "machine_vision_acquisition_python"
-version = "0.1.0"
+version = "0.2.0"
 description = "PFR library for machine vision interfacing"
 authors = ["Manu Lange <manu.lange@plantandfood.co.nz>"]
 packages = [
@@ -10,15 +10,20 @@ packages = [
 [tool.poetry.scripts]
 mva_process = 'machine_vision_acquisition_python.process.cli:cli'
 mva_viewer = 'machine_vision_acquisition_python.viewer.cli:cli'
+mva_capture = 'machine_vision_acquisition_python.capture.cli:cli'
 
 [tool.poetry.dependencies]
 python = "^3.8"
 opencv-python = "^4.5"
 click = "^8.1.2"
+pydantic = "^1.9.1"
+Flask = "^2.1.2"
+sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"
 openpyxl = "^3.0.10"
 
 [tool.poetry.dev-dependencies]
+black = {version = "^22.3.0"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

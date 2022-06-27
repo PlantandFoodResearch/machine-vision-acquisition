@@ -1,0 +1,23 @@
+{
+  "version": "1",
+  "ptp_sync": true,
+  "cameras": [
+    {
+      "serial" : "220700207"
+    },
+    {
+      "serial" : "213902307"
+    },
+    {
+      "serial" : "213902309"
+    }
+  ],
+  "shared_params": [
+    {"name": "AcquisitionMode", "value": "Continuous"},
+    {"name": "ExposureAuto", "value": "Continuous"},
+    {"name": "GainAuto", "value": "Continuous"},
+    {"name": "ExposureTime", "value": 50000},
+    {"name": "AcquisitionFrameRateEnable", "value": true, "val_type": "bool"},
+    {"name": "AcquisitionFrameRate", "value": 5.0}
+  ]
+}

@@ -4,10 +4,10 @@ import typing
 import numpy as np
 
 
-def unpack_BayerRG12Packed(aravis_buffer):
+def buffer_to_numpy_16bit_packed(raw_data_ptr, height: int, width: int):
     # Motivation / Credit: https://stackoverflow.com/a/70525330
     # BUG: The pixel formats in the above example were not working. Used http://softwareservices.flir.com/BFS-U3-200S6/latest/Model/public/ImageFormatControl.html
-    raw_data = np.frombuffer(aravis_buffer.get_data(), np.uint8)
+    raw_data = np.frombuffer(raw_data_ptr, np.uint8)
     # data = np.frombuffer(ptr, dtype=np.uint8)
     raw_data_uint16 = raw_data.astype(np.uint16)
     result = np.zeros(raw_data.size * 2 // 3, np.uint16)
@@ -17,26 +17,25 @@ def unpack_BayerRG12Packed(aravis_buffer):
     result[0::2] = ((raw_data_uint16[1::3] & 0x0F)) | (raw_data_uint16[0::3] << 4)
     result[1::2] = ((raw_data_uint16[1::3] & 0xF0) >> 4) | (raw_data_uint16[2::3] << 4)
     image = np.reshape(
-        result, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width())
+        result, (height, width)
     )
-
-    # Old method
-    # fst_uint8, mid_uint8, lst_uint8 = np.reshape(raw_data, (-1, 3)).astype(np.uint16).T
-    # # fst_uint12 = ((mid_uint8 & 0x0F) << 8) | fst_uint8
-    # fst_uint12 = ((mid_uint8 & 0xF0) >> 4) | fst_uint8
-    # # snd_uint12 = (lst_uint8 << 4) | ((mid_uint8 & 0xF0) >> 4)
-    # snd_uint12 = (lst_uint8 << 4) | ((mid_uint8 & 0x0F) << 8)
-    # image = np.reshape(np.concatenate((fst_uint12[:, None], snd_uint12[:, None]), axis=1), (aravis_buffer.get_image_height(), aravis_buffer.get_image_width()))
-    return image.copy()
+    return image
 
 
-def unpack_BayerRG12(aravis_buffer):
-    addr = aravis_buffer.get_data()
-    ptr = ctypes.cast(addr, ctypes.POINTER(ctypes.c_uint16))
+def buffer_to_numpy_16bit(raw_data_ptr, height: int, width: int):
+    ptr = ctypes.cast(raw_data_ptr, ctypes.POINTER(ctypes.c_uint16))
     image = np.ctypeslib.as_array(
-        ptr, (aravis_buffer.get_image_height(), aravis_buffer.get_image_width())
+        ptr, (height, width)
     )
-    return image.copy()
+    return image
+
+
+def buffer_to_numpy_8bit(raw_data_ptr, height: int, width: int):
+    ptr = ctypes.cast(raw_data_ptr, ctypes.POINTER(ctypes.c_uint8))
+    image = np.ctypeslib.as_array(
+        ptr, (height, width)
+    )
+    return image
 
 
 def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:

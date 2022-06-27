@@ -89,7 +89,7 @@ DeviceFactoryReset executed
 ```
 
 ## Tools
-To use these tools, if they are python, ensure you have the dependencies installed. Either run `poetry install` (or if not using poetry: `python3 -m pip install -e .`) in the repo root or manually do this. Use a virtual environment if not in a Docker container.
+To use these tools, if they are python, ensure you have the dependencies installed. Either run `python3 -m poetry install` (or if not using poetry: `python3 -m pip install -e .`) in the repo root or manually do this. Use a virtual environment if not in a Docker container.
 
 In general the tools are called `mva_*` and use `click` with sub-commands.
 
