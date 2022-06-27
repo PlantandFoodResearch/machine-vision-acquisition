@@ -51,6 +51,7 @@ RUN apt-get update --quiet \
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 
+# Borrowed from VSCode's dev contianer setup
 FROM cmake-gcc as base-dev
 # [Option] Install zsh
 ARG INSTALL_ZSH="true"
@@ -80,8 +81,8 @@ CMD [ "sleep", "infinity" ]
 
 
 FROM base-dev as aravis-dev
-# Download and unpack mvGenTL
-ARG ARAVIS_URL=https://github.com/AravisProject/aravis/releases/download/0.8.21/aravis-0.8.21.tar.xz
+# Download, build, install Aravis
+ARG ARAVIS_URL
 RUN mkdir -p /opt/src \
     && apt-get update --quiet \
     && apt-get --no-install-recommends install --yes \
@@ -117,6 +118,7 @@ RUN mkdir -p /opt/src/aravis \
     && ldconfig \
     && cd /
 
+# Ensure Aravis Python bindings and type hints are working well
 RUN python3 -m pip install -U pip setuptools wheel \
     && python3 -m pip install -U PyGObject pycairo PyGObject-stubs \
     # Force binary install of opencv since building it can take days!
@@ -190,7 +192,6 @@ ENV PATH "${PATH}:/opt/src/chronoptics/bin"
 WORKDIR /src
 USER vscode
 CMD [ "bash", "-l"]
-
 
 
 # Future multi arch support notes:

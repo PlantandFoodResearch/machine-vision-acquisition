@@ -2,17 +2,19 @@ from __future__ import annotations
 import typing
 import logging
 import time
-import gi
-
-gi.require_version("Aravis", "0.8")
-from gi.repository import Aravis
+import cv2
+import numpy as np
+log = logging.getLogger(__name__)
+try:
+    import gi
+    gi.require_version("Aravis", "0.8")
+    from gi.repository import Aravis
+except ImportError as _:
+    log.warning(f"Could not import Aravis, calling some functions will cause exceptions.")
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from machine_vision_acquisition_python.viewer.cli import CameraHelper
-
-
-log = logging.getLogger(__name__)
 
 
 def check_ptp_sync(cameras: typing.List[CameraHelper]):
@@ -57,3 +59,56 @@ def disable_ptp_sync(cameras: typing.List[CameraHelper]):
     for camera in cameras:
         device: Aravis.Device = camera.camera.get_device()
         device.set_boolean_feature_value("PtpEnable", True)
+
+
+def get_image_sharpness(image: cv2.Mat, size=60):
+    # Inspired by https://github.com/PlantandFoodResearch/Morphometrics/blob/master/morphometrics/frames/quality.py
+    # Which was inspired by https://pyimagesearch.com/2020/06/15/opencv-fast-fourier-transform-fft-for-blur-detection-in-images-and-video-streams/
+    
+    # grab the dimensions of the image and use the dimensions to
+    # derive the center (x, y)-coordinates
+    h, w = image.shape
+    (cX, cY) = (int(w / 2.0), int(h / 2.0))
+    # compute the FFT to find the frequency transform, then shift
+    # the zero frequency component (i.e., DC component located at
+    # the top-left corner) to the center where it will be more
+    # easy to analyze
+    fft = np.fft.fft2(image)
+    fftShift = np.fft.fftshift(fft)
+    # zero-out the center of the FFT shift (i.e., remove low
+    # frequencies), apply the inverse shift such that the DC
+    # component once again becomes the top-left, and then apply
+    # the inverse FFT
+    fftShift[cY - size:cY + size, cX - size:cX + size] = 0
+    fftShift = np.fft.ifftshift(fftShift)
+    recon = np.fft.ifft2(fftShift)
+    # compute the magnitude spectrum of the reconstructed image,
+    # then compute the mean of the magnitude values
+    magnitude = 20 * np.log(np.abs(recon))
+    mean = np.mean(magnitude)
+    return mean
+
+
+def get_image_max(image: cv2.Mat):
+    max = np.iinfo(image.dtype.type).max  # type: ignore
+    return float(np.max(image)/max)
+
+
+def get_image_mean(image: cv2.Mat):
+    """Gets mean image value, converting to gray if required first"""
+    channels = image.shape[-1] if image.ndim == 3 else 1
+    if channels == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    mean = np.mean(image)
+    max = np.iinfo(image.dtype.type).max  # type: ignore
+    return float(mean/max)
+
+
+def get_image_std(image: cv2.Mat):
+    """Gets standard deviation image values, converting to gray if required first"""
+    channels = image.shape[-1] if image.ndim == 3 else 1
+    if channels == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    std = np.std(image)
+    max = np.iinfo(image.dtype.type).max  # type: ignore
+    return float(std/max)

@@ -1,4 +1,6 @@
-# Notes on getting lsyncd working
+# File sync server setup
+A basic lsyncd setup to move files to a server
+## Notes on getting lsyncd working
 https://www.howtoforge.com/how-to-synchronize-directories-using-lsyncd-on-ubuntu/
 
 https://lsyncd.github.io/lsyncd/

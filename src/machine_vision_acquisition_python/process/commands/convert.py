@@ -4,11 +4,17 @@ import typing
 import datetime
 import cv2
 import logging
+import json
 import multiprocessing
-from machine_vision_acquisition_python.converter.processing import cvt_tonemap_image
+from machine_vision_acquisition_python.process.processing import cvt_tonemap_image
+from machine_vision_acquisition_python.utils import (
+    get_image_mean,
+    get_image_sharpness,
+    get_image_std,
+    get_image_max,
+)
 
 
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
@@ -47,7 +53,7 @@ log = logging.getLogger(__name__)
 @click.option(
     "--tonemap", "-t", help="Output 8bit tonemapped images", is_flag=True, default=False
 )
-def cli(input_path: Path, output_path: typing.Optional[Path], tonemap: bool):
+def convert(input_path: Path, output_path: typing.Optional[Path], tonemap: bool):
     """
     Batch converts raw 12bit 'PNG' images to de-bayered 12bit images. Optionally tonemaps to 8bit images
     """
@@ -101,7 +107,3 @@ def process_file(in_path: Path, out_dir: Path, tonemap: bool):
         image = cvt_tonemap_image(image)
     if not cv2.imwrite(str(out_path), image):
         raise ValueError(f"Failed to write {out_path.name}")
-
-
-if __name__ == "__main__":
-    cli()

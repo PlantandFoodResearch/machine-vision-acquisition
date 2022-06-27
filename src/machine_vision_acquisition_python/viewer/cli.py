@@ -3,15 +3,15 @@ import logging
 import cv2
 import os
 import typing
-import cv2
+import ctypes
+import numpy as np
 from pathlib import Path
 from timeit import default_timer as timer
 import machine_vision_acquisition_python.utils
-from machine_vision_acquisition_python.converter.processing import (
+from machine_vision_acquisition_python.process.processing import (
     cvt_tonemap_image,
     resize_with_aspect_ratio,
-    buffer_to_numpy_16bit,
-    buffer_to_numpy_16bit_packed,
+    
 )
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
 log = logging.getLogger(__name__)
@@ -23,6 +23,13 @@ try:
 except ImportError as _:
     log.warning(f"Failed to import chronoptics")
     ToFCameraHelper = None
+log = logging.getLogger(__name__)
+try:
+    import gi
+    gi.require_version("Aravis", "0.8")
+    from gi.repository import Aravis
+except ImportError as _:
+    log.error(f"Could not import Aravis, calling most functions will cause exceptions.")
 
 DISPLAY_SIZE_WIDTH = 1280
 

@@ -22,5 +22,5 @@ services:
       - DISPLAY
       - LIBGL_ALWAYS_INDIRECT
     build:
-      dockerfile: aravis.dockerfile
+      dockerfile: aravis-prebuilt.dockerfile
       context: ./docker
