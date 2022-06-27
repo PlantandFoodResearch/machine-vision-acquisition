@@ -16,9 +16,8 @@ import gi
 gi.require_version("Aravis", "0.8")
 from gi.repository import Aravis, GObject
 import cv2
-from machine_vision_acquisition_python.converter.processing import (
+from machine_vision_acquisition_python.process.processing import (
     cvt_tonemap_image,
-    resize_with_aspect_ratio,
     buffer_to_numpy_8bit,
     buffer_to_numpy_16bit,
     buffer_to_numpy_16bit_packed,

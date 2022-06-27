@@ -10,13 +10,13 @@ packages = [
 [tool.poetry.scripts]
 mva_process = 'machine_vision_acquisition_python.process.cli:cli'
 mva_viewer = 'machine_vision_acquisition_python.viewer.cli:cli'
+mva_capture = 'machine_vision_acquisition_python.capture.cli:cli'
 
 [tool.poetry.dependencies]
 python = "^3.8"
 opencv-python = "^4.5"
 click = "^8.1.2"
 pydantic = "^1.9.1"
-pandas = "^1.4.2"
 Flask = "^2.1.2"
 sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"

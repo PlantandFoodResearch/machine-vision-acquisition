@@ -11,7 +11,7 @@ from flask.wrappers import Response
 import time
 from pathlib import Path
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper, get_camera_by_serial
-from machine_vision_acquisition_python.converter.processing import resize_with_aspect_ratio, cvt_tonemap_image
+from machine_vision_acquisition_python.process.processing import resize_with_aspect_ratio, cvt_tonemap_image
 from machine_vision_acquisition_python.models import Config, GenICamParam
 from machine_vision_acquisition_python.utils import enable_ptp_sync, disable_ptp_sync
 import machine_vision_acquisition_python.capture.keyboard
