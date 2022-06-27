@@ -13,6 +13,7 @@ import numpy as np
 import re
 from timeit import default_timer as timer
 import gi
+
 gi.require_version("Aravis", "0.8")
 from gi.repository import Aravis, GObject
 import cv2
@@ -36,7 +37,9 @@ PIXEL_FORMAT_PREFERENCE_LIST = [
 _MAX_PARAM_WRITE_ATTEMPTS = 2
 _LOG_FPS_PERIOD_S = 10
 
-class ArvStream(Aravis.Stream, GObject.GObject): pass
+
+class ArvStream(Aravis.Stream, GObject.GObject):
+    pass
 
 
 def convert_with_lock(buf: Aravis.Buffer) -> typing.Optional[cv2.Mat]:
@@ -67,17 +70,17 @@ class CameraHelper:
         except Exception as exc:
             log.debug(f"Could not open camera: {name}")
             raise exc
-        self.name = (
-            f"{self.camera.get_vendor_name()}-{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
-        )
+        self.name = f"{self.camera.get_vendor_name()}-{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
         self.short_name = (
             f"{self.camera.get_model_name()}-{self.camera.get_device_serial_number()}"
         )
         # Remove all non word and hyphen characters so that it is more pathsafe (still not guaranteed)
-        self.short_name = re.sub(r"([^\w\s]|\s+)", '-', self.short_name)
+        self.short_name = re.sub(r"([^\w\s]|\s+)", "-", self.short_name)
         log.debug(f"Opened {self.name}")
         # Attempt to ensure camera is stopped on exit
-        self._finalizer = weakref.finalize(self, Aravis.Camera.stop_acquisition, self.camera)
+        self._finalizer = weakref.finalize(
+            self, Aravis.Camera.stop_acquisition, self.camera
+        )
         self.cached_image: typing.Optional[cv2.Mat] = None
         self.cached_image_time: typing.Optional[np.datetime64] = None
         self.pixel_format_str: typing.Optional[str] = None
@@ -86,9 +89,10 @@ class CameraHelper:
         self._frame_counter_reset_time_s = time.perf_counter()
         self._fps: typing.Optional[float] = None
         self.latest_buffer: typing.Optional[Aravis.Buffer] = None
-        self.latest_buffer_queue: queue.Queue[Aravis.Buffer] = queue.Queue(maxsize=1)  # We use a queue of 1 to allow stream thread to pass buffers back to main
+        self.latest_buffer_queue: queue.Queue[Aravis.Buffer] = queue.Queue(
+            maxsize=1
+        )  # We use a queue of 1 to allow stream thread to pass buffers back to main
         self.set_default_camera_options()
-
 
     @property
     def device(self):
@@ -97,11 +101,9 @@ class CameraHelper:
             return device
         raise AttributeError(f"Could not access Aravis.Device for {self.name}")
 
-
     def load_default_settings(self):
         res = self.device.set_string_feature_value("UserSetSelector", "Default")  # type: ignore
         res = self.device.execute_command("UserSetLoad")  # type: ignore
-
 
     def select_pixel_format(self):
         """Attempt to use best option pixel format"""
@@ -133,7 +135,6 @@ class CameraHelper:
             )
             self.camera.gv_set_packet_size(self.camera.gv_auto_packet_size())
 
-
         self.stream: ArvStream = self.camera.create_stream()  # type: ignore
         self.stream.connect("new-buffer", self._stream_buffer_new_cb, weakref.ref(self))
         self.stream.set_emit_signals(True)  # type: ignore
@@ -146,7 +147,6 @@ class CameraHelper:
         self._finalizer = weakref.finalize(self, Aravis.Stream.set_emit_signals, self.stream, False)  # type: ignore
         log.debug(f"setup stream and cb_processing for {self.name}")
 
-
     def update_fps(self):
         if self._frame_counter < 5:
             log.debug(f"Not enough frames captured to get an FPS value")
@@ -158,7 +158,6 @@ class CameraHelper:
             self._frame_counter_reset_time_s = time.perf_counter()
             self._frame_counter = 0
         log.debug(f"FPS ({self.name}): {self._fps}")
-
 
     def settle_auto_exposure(self, length_s=5):
         """Run camera for x seconds to let exposure settle"""
@@ -176,7 +175,9 @@ class CameraHelper:
             log.info(f"Could not run settle_auto_exposure for {self.name}")
 
     @staticmethod
-    def _stream_buffer_new_cb(stream: ArvStream, user_data: weakref.ReferenceType["CameraHelper"]):
+    def _stream_buffer_new_cb(
+        stream: ArvStream, user_data: weakref.ReferenceType["CameraHelper"]
+    ):
         """This is called in the Aravis Thread. The debugger seems to not work here, so keep it simple!"""
         camera = user_data()
         if not camera:
@@ -201,7 +202,10 @@ class CameraHelper:
                     stream.push_buffer(old)  # type: ignore
                     del old
                 camera.latest_buffer_queue.put_nowait(buffer)
-            if time.perf_counter() - camera._frame_counter_reset_time_s > _LOG_FPS_PERIOD_S:
+            if (
+                time.perf_counter() - camera._frame_counter_reset_time_s
+                > _LOG_FPS_PERIOD_S
+            ):
                 camera.update_fps()
         except queue.Full as _:
             log.debug(f"Dropping buffer since processing queue is full")
@@ -236,10 +240,15 @@ class CameraHelper:
             # At this stage we have a buffer, we must return it to the pool.
             try:
                 self.cached_image = convert_with_lock(buffer)
-                self.cached_image_time = pd.Timestamp(buffer.get_system_timestamp(), unit="ns").to_datetime64()
+                self.cached_image_time = pd.Timestamp(
+                    buffer.get_system_timestamp(), unit="ns"
+                ).to_datetime64()
                 fps_counter += 1
-                if time.perf_counter() - fps_start > _LOG_FPS_PERIOD_S and fps_counter > 0:
-                    fps = fps_counter/(time.perf_counter() - fps_start)
+                if (
+                    time.perf_counter() - fps_start > _LOG_FPS_PERIOD_S
+                    and fps_counter > 0
+                ):
+                    fps = fps_counter / (time.perf_counter() - fps_start)
                     fps_counter = 0
                     fps_start = time.perf_counter()
                     log.debug(f"improc thread ({self.name}) FPS: {fps}")
@@ -256,10 +265,15 @@ class CameraHelper:
         if not arv_device.is_feature_available(param.name):  # type: ignore
             raise ValueError(f"Feature {param.name} not availible on {self.name}")
         feature_access_mode: Aravis.GcAccessMode = arv_device.get_feature(param.name).get_actual_access_mode()  # type: ignore
-        if feature_access_mode is not Aravis.GcAccessMode.RW and feature_access_mode is not Aravis.GcAccessMode.WO:
+        if (
+            feature_access_mode is not Aravis.GcAccessMode.RW
+            and feature_access_mode is not Aravis.GcAccessMode.WO
+        ):
             # Bug in Aravis: https://github.com/AravisProject/aravis/issues/684
             # Sometimes writeable nodes are reported as read-only. Let us be pythonic and ask for forgiveness!
-            log.warning(f"Attempting to write to {param.name}[{Aravis.GcAccessMode.to_string(feature_access_mode)}] on {self.name}")
+            log.warning(
+                f"Attempting to write to {param.name}[{Aravis.GcAccessMode.to_string(feature_access_mode)}] on {self.name}"
+            )
             # raise AttributeError(f"Feature {param.name} access mode is {feature_access_mode}")
 
         attempts = 0
@@ -278,13 +292,20 @@ class CameraHelper:
                         arv_device.set_features_from_string(f"{param.name}={param.value}")  # type: ignore
                         break
                     except Exception as _:
-                        raise ValueError(f"Could not set {param.name}, unsupported type: {param_type}")
+                        raise ValueError(
+                            f"Could not set {param.name}, unsupported type: {param_type}"
+                        )
                 break
             except Exception as exc:
                 attempts += 1
-                if "GigEVision write_memory timeout" in str(exc) and attempts < _MAX_PARAM_WRITE_ATTEMPTS:
+                if (
+                    "GigEVision write_memory timeout" in str(exc)
+                    and attempts < _MAX_PARAM_WRITE_ATTEMPTS
+                ):
                     # try again
-                    log.warning(f"GigEVision write_memory timeout setting {param.name} on {self.name}, trying again...")
+                    log.warning(
+                        f"GigEVision write_memory timeout setting {param.name} on {self.name}, trying again..."
+                    )
                     continue
                 raise
         log.info(f"Set {param.name}={param.value} on {self.name}")
@@ -321,8 +342,9 @@ class CameraHelper:
             raise ValueError("No buffer captured yet, has the camera been triggered?")
         with self.lock:
             self.cached_image = convert_with_lock(self.latest_buffer)
-            self.cached_image_time = pd.Timestamp(self.latest_buffer.get_system_timestamp(), unit="ns").to_datetime64()
-
+            self.cached_image_time = pd.Timestamp(
+                self.latest_buffer.get_system_timestamp(), unit="ns"
+            ).to_datetime64()
 
     def get_last_image(self):
         """Returns previously acquired cached image"""
@@ -338,14 +360,18 @@ def get_camera_by_serial(serial: str) -> CameraHelper:
         dev_serial_str = Aravis.get_device_serial_nbr(i)
         # Sometimes the serial is in HEX
         try:
-            dev_serial_hextodec_str = str(int(dev_serial_str,16))
+            dev_serial_hextodec_str = str(int(dev_serial_str, 16))
         except Exception as _:
             dev_serial_hextodec_str = None
         if serial == dev_serial_str:
-            log.debug(f"Found device at address {Aravis.get_device_address(i)} to match serial {serial}")
+            log.debug(
+                f"Found device at address {Aravis.get_device_address(i)} to match serial {serial}"
+            )
             return CameraHelper(Aravis.get_device_id(i))
         elif serial == dev_serial_hextodec_str:
-            log.debug(f"Found device at address {Aravis.get_device_address(i)} to match HEX serial {dev_serial_str}")
+            log.debug(
+                f"Found device at address {Aravis.get_device_address(i)} to match HEX serial {dev_serial_str}"
+            )
             return CameraHelper(Aravis.get_device_id(i))
 
     raise ValueError(f"Could not find Aravis camera by serial: {serial}")

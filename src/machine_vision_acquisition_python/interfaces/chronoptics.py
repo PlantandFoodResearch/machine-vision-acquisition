@@ -5,7 +5,9 @@ import time
 import logging
 from timeit import default_timer as timer
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
+
 log = logging.getLogger(__name__)
+
 
 class ToFCameraHelper(CameraHelper):
     def __init__(self, name: typing.Optional[str]) -> None:
@@ -99,4 +101,3 @@ class ToFCameraHelper(CameraHelper):
             self.cached_image_intensity_normalised, 0, 255
         )
         return self.cached_image_intensity_normalised
-

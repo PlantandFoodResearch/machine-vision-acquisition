@@ -8,7 +8,9 @@ import click
 from timeit import default_timer as timer
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
 from machine_vision_acquisition_python.interfaces.chronoptics import ToFCameraHelper
-from machine_vision_acquisition_python.process.processing import resize_with_aspect_ratio
+from machine_vision_acquisition_python.process.processing import (
+    resize_with_aspect_ratio,
+)
 
 
 log = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ def getFrame(frames: typing.List[tof.Data], frame_type: tof.FrameType):
         if frame.frameType() == frame_type:
             return frame
     return None
+
 
 def get_first_valid_kea_camera() -> ToFCameraHelper:
     interface = tof.GigeInterface()

@@ -10,11 +10,18 @@ import time
 import functools
 import numpy as np
 from pathlib import Path
-from machine_vision_acquisition_python.interfaces.aravis import CameraHelper, get_camera_by_serial
-from machine_vision_acquisition_python.process.processing import resize_with_aspect_ratio, cvt_tonemap_image
+from machine_vision_acquisition_python.interfaces.aravis import (
+    CameraHelper,
+    get_camera_by_serial,
+)
+from machine_vision_acquisition_python.process.processing import (
+    resize_with_aspect_ratio,
+    cvt_tonemap_image,
+)
 from machine_vision_acquisition_python.models import Config, GenICamParam
 from machine_vision_acquisition_python.utils import enable_ptp_sync, disable_ptp_sync
 from machine_vision_acquisition_python.capture.keyboard import register_callback
+
 # Temporary helpers
 from machine_vision_acquisition_python.capture.misc import *
 
@@ -25,6 +32,7 @@ import os
 
 log = logging.getLogger(__name__)
 
+
 @click.command()
 @click.option(
     "--config",
@@ -32,7 +40,9 @@ log = logging.getLogger(__name__)
     "config_path",
     help="Path to JSON configuration file for capture",
     required=True,
-    type=click.types.Path(file_okay=True, exists=True, dir_okay=False, readable=True, path_type=Path)
+    type=click.types.Path(
+        file_okay=True, exists=True, dir_okay=False, readable=True, path_type=Path
+    ),
 )
 @click.option(
     "--output",
@@ -40,7 +50,9 @@ log = logging.getLogger(__name__)
     "out_dir",
     help="Path to output folder to use as root. Will be created (including parents) if required",
     required=False,
-    type=click.types.Path(file_okay=False, dir_okay=True, readable=True, path_type=Path)
+    type=click.types.Path(
+        file_okay=False, dir_okay=True, readable=True, path_type=Path
+    ),
 )
 def cli(config_path: Path, out_dir: Optional[Path]):
     """
@@ -86,7 +98,9 @@ def set_camera_params(config: Config, cameras: List[CameraHelper]) -> None:
             camera.set_parameter(param)
 
 
-def save_current_frame(camera: CameraHelper, out_dir: Optional[Path] = None, debayer: bool = True):
+def save_current_frame(
+    camera: CameraHelper, out_dir: Optional[Path] = None, debayer: bool = True
+):
     if out_dir is None:
         out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
     with camera.lock:
@@ -101,7 +115,9 @@ def save_current_frame(camera: CameraHelper, out_dir: Optional[Path] = None, deb
     if debayer:
         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
     # Will result in  YYYY-MM-DDTHH-mm-ss-[ms*3] e.g. 2022-06-20T00-22-44-209
-    pathsafe_time_str = np.datetime_as_string(image_time, unit="ms").replace(":", "-").replace(".", "-")
+    pathsafe_time_str = (
+        np.datetime_as_string(image_time, unit="ms").replace(":", "-").replace(".", "-")
+    )
     # Will give names like: "Grasshopper3-GS3-U3-23S6C-15122686-2022-06-20T00-22-44-209.png"
     img_path = out_dir / f"{camera.short_name}-{pathsafe_time_str}.png"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -138,7 +154,6 @@ def main(config: Config):
         else:
             external_trigger_cameras.append(camera)
 
-
     if config.ptp_sync:
         enable_ptp_sync(cameras)
     elif config.ptp_sync == False:
@@ -171,15 +186,15 @@ def main(config: Config):
         liveview_web(cameras)
         # test_print_all(cameras)
         # while True:
-            # time.sleep(5.0)
-            # cam: CameraHelper = soft_trigger_cameras[0]
-            # cam.camera.software_trigger()
-            # res = cv2.waitKey(100)
-            # if res <= 0:
-            #     continue
-            # ch = chr(res)
-            # if ch == "t":
-            #     cam.camera.software_trigger()
+        # time.sleep(5.0)
+        # cam: CameraHelper = soft_trigger_cameras[0]
+        # cam.camera.software_trigger()
+        # res = cv2.waitKey(100)
+        # if res <= 0:
+        #     continue
+        # ch = chr(res)
+        # if ch == "t":
+        #     cam.camera.software_trigger()
     except KeyboardInterrupt as _:
         pass
     finally:
@@ -192,4 +207,3 @@ def main(config: Config):
     #     temp_display_latest(cameras)
     # # log.info(f"ts: {ts}")
     pass
-

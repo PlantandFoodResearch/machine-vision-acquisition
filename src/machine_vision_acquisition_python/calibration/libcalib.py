@@ -32,18 +32,18 @@ def read_calib_parameters(calibio_json: Path):
             polymorphic_name = camera["model"].get("polymorphic_name")
             polymorphic_id = camera["model"].get("polymorphic_id")
             # for some reason CalibIO outptus polymorphic_id==1 for 'other' cameras (not the first)
-            if polymorphic_name is None and  polymorphic_id != 1:
+            if polymorphic_name is None and polymorphic_id != 1:
                 log.warning(
                     f"Skipping invalid camera type, polymorphic_id: {camera['model']['polymorphic_id']}"
                 )
                 continue
             else:
                 if polymorphic_name != "libCalib::CameraModelOpenCV":
-                    log.warning(
-                        f"polymorphic_name: {polymorphic_name}"
-                    )
+                    log.warning(f"polymorphic_name: {polymorphic_name}")
                 if polymorphic_id == 1:
-                    log.warning(f"Using polymorphic_id==1 for camera serial {camera.get('serial', 'unknown')}")
+                    log.warning(
+                        f"Using polymorphic_id==1 for camera serial {camera.get('serial', 'unknown')}"
+                    )
                 valid_calibs.append(camera)
         except:
             log.exception(f"Skipping invalid camera, unknown error")
@@ -59,9 +59,9 @@ def read_calib_parameters(calibio_json: Path):
         transform = camera["transform"]
         rvec, tvec = read_camera_extrinsics(transform)
         # todo: get serial mappings
-        serial =  camera.get("serial", "unknown")
+        serial = camera.get("serial", "unknown")
         if serial == "unknown":
-            log.warning(f"calibration does not reference camera serial, is it present?") 
+            log.warning(f"calibration does not reference camera serial, is it present?")
         calib = Calibration(serial, cam_matrix, distortion_matrix, rvec, tvec)
         # Use openCV naming
         camera_calibrations.append(calib)

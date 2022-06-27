@@ -11,13 +11,15 @@ import machine_vision_acquisition_python.utils
 from machine_vision_acquisition_python.process.processing import (
     cvt_tonemap_image,
     resize_with_aspect_ratio,
-    
 )
 from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
+
 log = logging.getLogger(__name__)
 import gi
+
 gi.require_version("Aravis", "0.8")
 from gi.repository import Aravis
+
 try:
     from machine_vision_acquisition_python.interfaces.chronoptics import ToFCameraHelper
 except ImportError as _:
@@ -26,6 +28,7 @@ except ImportError as _:
 log = logging.getLogger(__name__)
 try:
     import gi
+
     gi.require_version("Aravis", "0.8")
     from gi.repository import Aravis
 except ImportError as _:

@@ -62,10 +62,17 @@ log = logging.getLogger(__name__)
     ),
 )
 @click.option(
-    "--force", "-f", help="Use any calibration, even if cannot match serial", is_flag=True, default=False
+    "--force",
+    "-f",
+    help="Use any calibration, even if cannot match serial",
+    is_flag=True,
+    default=False,
 )
 def undistort(
-    calibio_json_path: Path, input_path: Path, output_path: typing.Optional[Path], force:bool
+    calibio_json_path: Path,
+    input_path: Path,
+    output_path: typing.Optional[Path],
+    force: bool,
 ):
     """
     Rectify images using CalibIO and OpenCV from a single camera.
@@ -82,12 +89,18 @@ def undistort(
     # Try match serial to folder path
     for calibration in calibrations:
         if calibration.serial in str(input_path.resolve()):
-            log.debug(f"matched path component to calibration camera serial {calibration.serial}")
+            log.debug(
+                f"matched path component to calibration camera serial {calibration.serial}"
+            )
             break
     else:
         if not force:
-            raise ValueError(f"Could not match calibration serials ({[calibration.serial for calibration in calibrations]}) to part of folder path {input_path}")
-        log.warning(f"Could not match calibration serials to folder path, using first calibration (--force specified)")
+            raise ValueError(
+                f"Could not match calibration serials ({[calibration.serial for calibration in calibrations]}) to part of folder path {input_path}"
+            )
+        log.warning(
+            f"Could not match calibration serials to folder path, using first calibration (--force specified)"
+        )
         calibration = calibrations[0]
     # Todo: fix this somehow camera serial mappings
 

@@ -16,25 +16,19 @@ def buffer_to_numpy_16bit_packed(raw_data_ptr, height: int, width: int):
     # For reference: [0::3] gives every 3 entry starting at the 0th entry.
     result[0::2] = ((raw_data_uint16[1::3] & 0x0F)) | (raw_data_uint16[0::3] << 4)
     result[1::2] = ((raw_data_uint16[1::3] & 0xF0) >> 4) | (raw_data_uint16[2::3] << 4)
-    image = np.reshape(
-        result, (height, width)
-    )
+    image = np.reshape(result, (height, width))
     return image
 
 
 def buffer_to_numpy_16bit(raw_data_ptr, height: int, width: int):
     ptr = ctypes.cast(raw_data_ptr, ctypes.POINTER(ctypes.c_uint16))
-    image = np.ctypeslib.as_array(
-        ptr, (height, width)
-    )
+    image = np.ctypeslib.as_array(ptr, (height, width))
     return image
 
 
 def buffer_to_numpy_8bit(raw_data_ptr, height: int, width: int):
     ptr = ctypes.cast(raw_data_ptr, ctypes.POINTER(ctypes.c_uint8))
-    image = np.ctypeslib.as_array(
-        ptr, (height, width)
-    )
+    image = np.ctypeslib.as_array(ptr, (height, width))
     return image
 
 

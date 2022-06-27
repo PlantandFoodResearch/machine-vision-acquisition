@@ -52,7 +52,7 @@ class Undistorter:
         self._roi = roi
         y, x, h, w = self.roi
         # OpenCV is inconsistent with width, height or height, width order often :(
-        self._undistorted_size = (w-x, h-y)
+        self._undistorted_size = (w - x, h - y)
         self._map1, self._map2 = cv2.initUndistortRectifyMap(
             self.calibration.cameraMatrix,
             self.calibration.distCoeffs,
@@ -101,7 +101,7 @@ class Undistorter:
             return False
         return True
 
-    def undistort(self, image: cv2.Mat, crop = True) -> cv2.Mat:
+    def undistort(self, image: cv2.Mat, crop=True) -> cv2.Mat:
         result = cv2.remap(
             image,
             self.map1,

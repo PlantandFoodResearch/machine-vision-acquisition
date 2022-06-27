@@ -3,9 +3,8 @@ import threading
 import atexit
 from sshkeyboard import listen_keyboard, stop_listening
 
-HANDLERS: typing.Dict[str, typing.Callable] = {
+HANDLERS: typing.Dict[str, typing.Callable] = {}
 
-}
 
 def press(key):
     global HANDLERS
@@ -22,16 +21,19 @@ def register_callback(key: str, callback: typing.Callable):
     key = key.lower()
     if HANDLERS.get(key) is not None:
         raise ValueError(f"{key} already has a registerd callback")
-    HANDLERS.update({
-        key : callback
-    })
+    HANDLERS.update({key: callback})
 
 
-keyboard_thread = threading.Thread(target=listen_keyboard, args=(), kwargs={
-    "on_press": press,
-    # "on_release": release,
-    "lower": True
-}, daemon=True)
+keyboard_thread = threading.Thread(
+    target=listen_keyboard,
+    args=(),
+    kwargs={
+        "on_press": press,
+        # "on_release": release,
+        "lower": True,
+    },
+    daemon=True,
+)
 
 # ensure thread is shutdown
 atexit.register(stop_listening)
