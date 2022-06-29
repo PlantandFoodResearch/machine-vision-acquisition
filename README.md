@@ -168,10 +168,11 @@ Commands:
 ### Systemd service to restart DHCP and NMCLI connections
 To mitigate issues with the devices not being stable, a quick helper service was created.
 #### Install
+First, ensure the devices in [etc/nmcli-dhcp-manager.service](etc/nmcli-dhcp-manager.service) match those on the system. Use `ip link` to check.
 ```bash
 # In a sudo shell (i.e. sudo -E su)
 mkdir -p /opt/nmcli-dhcp-manager
-python3 -m venv /opt/nmcli-dhcp-manager/.venv
+python3.8 -m venv /opt/nmcli-dhcp-manager/.venv
 cp ./etc/nmcli-dhcp-manager.service /etc/systemd/system/
 cp ./src/utils/nmcli-dhcp-manager.py /opt/nmcli-dhcp-manager/nmcli-dhcp-manager.py
 /opt/nmcli-dhcp-manager/.venv/bin/python -m pip install -U pip setuptools wheel

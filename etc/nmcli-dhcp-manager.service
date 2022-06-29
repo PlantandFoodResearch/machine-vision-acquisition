@@ -4,9 +4,8 @@ After=syslog.target network.target
 
 [Service]
 Type=simple
-User=user
 WorkingDirectory=/opt/nmcli-dhcp-manager
-ExecStart=/opt/nmcli-dhcp-manager/.venv/bin/python /opt/nmcli-dhcp-manager/nmcli-dhcp-manager.py --devices enp4s0
+ExecStart=/opt/nmcli-dhcp-manager/.venv/bin/python /opt/nmcli-dhcp-manager/nmcli-dhcp-manager.py --devices enp2s0f0,enp2s0f1
 Restart=on-failure
 
 [Install]
