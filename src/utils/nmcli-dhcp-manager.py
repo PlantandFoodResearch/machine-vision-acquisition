@@ -130,6 +130,7 @@ def set_mtu(connection: nmcli.data.connection.Connection, mtu: int):
 def reset_connection(connection: nmcli.data.connection.Connection):
     try:
         nmcli.connection.down(connection.name, wait=60)
+        time.sleep(1.0)
     except Exception as _:
         pass  # happens if device is already down. We mainly care about up.
     nmcli.connection.up(connection.name, wait=60)
