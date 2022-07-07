@@ -6,8 +6,13 @@ This repository is mainly a mix of Python and Docker. It uses *Poetry* and *Dock
 
 ### Quick Start
 **Note:** You won't have access to Aravis unless you manually install or you use the Docker workflow suggested.
-
-`poetry install`
+```bash
+poetry install
+# Or if you're having poetry issues, nut your pip is uptodate:
+python3 -m venv .venv # Ensure this is > python3.8
+. .venv/bin/activate
+pip install -e .
+```
 
 ## Docker Environments
 Since many manufacturers of cameras offer thier individual SDKs; this repository attempts to *capture* the setup of a development environment. Some are vendor specific (e.g. FLIR's Spinnaker), some more vendor agnostic (Aravis or mvIMPACT).
