@@ -14,13 +14,13 @@ mva_capture = 'machine_vision_acquisition_python.capture.cli:cli'
 
 [tool.poetry.dependencies]
 python = "^3.8"
-opencv-python = "^4.5"
 click = "^8.1.2"
 pydantic = "^1.9.1"
 Flask = "^2.1.2"
 sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"
 openpyxl = "^3.0.10"
+opencv-python-headless = "^4.6.0"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^22.3.0"}
