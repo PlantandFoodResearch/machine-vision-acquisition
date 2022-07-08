@@ -58,6 +58,7 @@ def read_calib_parameters(calibio_json: Path):
         cam_matrix, distortion_matrix = read_camera_intrinsics(intrinsics)
         transform = camera["transform"]
         rvec, tvec = read_camera_extrinsics(transform)
+        #TODO add imageSize here
         # todo: get serial mappings
         serial = camera.get("serial", "unknown")
         if serial == "unknown":
