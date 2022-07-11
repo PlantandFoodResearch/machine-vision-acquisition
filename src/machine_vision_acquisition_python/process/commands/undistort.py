@@ -79,7 +79,7 @@ def undistort(
     Rectify images using CalibIO and OpenCV from a single camera.
     """
 
-    nproc = ctx.parent.params["nproc"] if ctx.parent else multiprocessing.cpu_count()
+    nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "machine_vision_acquisition_python"
-version = "0.2.2"
+version = "0.2.3"
 description = "PFR library for machine vision interfacing"
 authors = ["Manu Lange <manu.lange@plantandfood.co.nz>"]
 packages = [

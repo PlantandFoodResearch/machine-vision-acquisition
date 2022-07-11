@@ -57,6 +57,8 @@ def convert(
     Batch converts raw 12bit 'PNG' images to de-bayered 12bit images. Optionally tonemaps to 8bit images
     """
 
+    nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
+
     # Ensure output exists
     if output_path is None:
         datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -68,7 +70,6 @@ def convert(
     output_path.mkdir(exist_ok=True, parents=True)
 
     # get going
-    nproc = ctx.parent.params["nproc"] if ctx.parent else multiprocessing.cpu_count()
     process_folder(input_path, output_path, tonemap, nproc=nproc)
 
 
