@@ -7,13 +7,6 @@ import logging
 import json
 import multiprocessing
 from machine_vision_acquisition_python.process.processing import cvt_tonemap_image
-from machine_vision_acquisition_python.utils import (
-    get_image_mean,
-    get_image_sharpness,
-    get_image_std,
-    get_image_max,
-)
-
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +46,13 @@ log = logging.getLogger(__name__)
 @click.option(
     "--tonemap", "-t", help="Output 8bit tonemapped images", is_flag=True, default=False
 )
-def convert(input_path: Path, output_path: typing.Optional[Path], tonemap: bool):
+@click.pass_context
+def convert(
+    ctx: click.Context,
+    input_path: Path,
+    output_path: typing.Optional[Path],
+    tonemap: bool,
+):
     """
     Batch converts raw 12bit 'PNG' images to de-bayered 12bit images. Optionally tonemaps to 8bit images
     """
@@ -69,10 +68,17 @@ def convert(input_path: Path, output_path: typing.Optional[Path], tonemap: bool)
     output_path.mkdir(exist_ok=True, parents=True)
 
     # get going
-    process_folder(input_path, output_path, tonemap)
+    nproc = ctx.parent.params["nproc"] if ctx.parent else multiprocessing.cpu_count()
+    process_folder(input_path, output_path, tonemap, nproc=nproc)
 
 
-def process_folder(input_path: Path, output_path: Path, tonemap: bool):
+def process_folder(
+    input_path: Path,
+    output_path: Path,
+    tonemap: bool,
+    nproc: int = multiprocessing.cpu_count(),
+):
+    # delayed import to avoid circular dependency but allow global nproc
     process_args = []
     # Gather work
     for file_path in input_path.rglob("*.png"):
@@ -81,11 +87,11 @@ def process_folder(input_path: Path, output_path: Path, tonemap: bool):
         process_args.append((file_path.resolve(), out_dir.resolve(), tonemap))
 
     # Multiprocess
-    pool = multiprocessing.Pool(processes=8)
+    pool = multiprocessing.Pool(processes=nproc)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         pool.starmap(process_file, process_args)
-        log.info("Done :)")
+        log.info(f"Done processing folder {input_path.name}")
     except KeyboardInterrupt as _:
         log.warning("Aborting processing")
     finally:

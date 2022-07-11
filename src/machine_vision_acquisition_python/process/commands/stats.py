@@ -51,10 +51,12 @@ log = logging.getLogger(__name__)
         resolve_path=True,
     ),
 )
-def stats(input_path: Path, output_path: typing.Optional[Path]):
+@click.pass_context
+def stats(ctx: click.Context, input_path: Path, output_path: typing.Optional[Path]):
     """
     Generate basic numerical stats from folders of images (reccursive) and output xlsx file
     """
+    nproc = ctx.parent.params["nproc"] if ctx.parent else multiprocessing.cpu_count()
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -65,10 +67,10 @@ def stats(input_path: Path, output_path: typing.Optional[Path]):
     output_file_path = output_path / f"{datetime_path}-stats.xlsx"
 
     # get going
-    process_folder_stats(input_path, output_file_path)
+    process_folder_stats(input_path, output_file_path, nproc)
 
 
-def process_folder_stats(input_path: Path, output_path: Path):
+def process_folder_stats(input_path: Path, output_path: Path, nproc: int):
     process_args = []
     # result_queue: multiprocessing.Queue[typing.Dict] = multiprocessing.Queue()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -77,7 +79,7 @@ def process_folder_stats(input_path: Path, output_path: Path):
         process_args.append((file_path.resolve(),))
 
     # Multiprocess
-    pool = multiprocessing.Pool(processes=4)
+    pool = multiprocessing.Pool(processes=nproc)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         results = pool.starmap(process_file_stats, process_args)

@@ -10,7 +10,6 @@ import multiprocessing
 from machine_vision_acquisition_python.calibration.distortion import Undistorter
 from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters
 
-
 log = logging.getLogger(__name__)
 
 
@@ -68,7 +67,9 @@ log = logging.getLogger(__name__)
     is_flag=True,
     default=False,
 )
+@click.pass_context
 def undistort(
+    ctx: click.Context,
     calibio_json_path: Path,
     input_path: Path,
     output_path: typing.Optional[Path],
@@ -77,6 +78,8 @@ def undistort(
     """
     Rectify images using CalibIO and OpenCV from a single camera.
     """
+
+    nproc = ctx.parent.params["nproc"] if ctx.parent else multiprocessing.cpu_count()
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -114,7 +117,7 @@ def undistort(
         out_dir.mkdir(exist_ok=True, parents=True)
         process_args.append((file_path.resolve(), out_dir, undistorter))
 
-    pool = multiprocessing.Pool(processes=4)
+    pool = multiprocessing.Pool(processes=nproc)
     try:
         log.info("Processing {} files in {}".format(len(process_args), str(input_path)))
         pool.starmap(process_file, process_args)

@@ -19,12 +19,14 @@ from pathlib import Path
     "output_path",
     help="Path to JSON configuration file for capture",
     required=False,
-    type=click.types.Path(file_okay=True, dir_okay=False, writable=True, path_type=Path)
+    type=click.types.Path(
+        file_okay=True, dir_okay=False, writable=True, path_type=Path
+    ),
 )
 def cli(model: str, output_path: Optional[Path]):
     try:
         parts = model.rsplit(".", 1)
-        if len(parts)!=2:
+        if len(parts) != 2:
             raise ValueError(f"Could not split {model} into package and class")
         library = parts[0]
         target_class_str = parts[1]
