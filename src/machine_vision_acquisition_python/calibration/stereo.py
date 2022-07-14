@@ -65,13 +65,15 @@ if __name__ == "__main__":
     Q = np.zeros(shape=(4,4))
 
    
-    cv2.stereoRectify(calibrations[1].cameraMatrix, calibrations[1].distCoeffs, calibrations[2].cameraMatrix, calibrations[2].distCoeffs, imageSize, cv2.Rodrigues(R)[0], T, R1, R2, P1, P2, Q, flags=0, alpha=-1)
+    cv2.stereoRectify(calibrations[1].cameraMatrix, calibrations[1].distCoeffs, calibrations[2].cameraMatrix, calibrations[2].distCoeffs, imageSize, cv2.Rodrigues(R)[0], T, R1, R2, P1, P2, Q, cv2.CALIB_ZERO_DISPARITY, -1)
 
     mapLeftX, mapLeftY = cv2.initUndistortRectifyMap(calibrations[1].cameraMatrix, calibrations[1].distCoeffs, R1, P1,imageSize, cv2.CV_16SC2)
     mapRightX, mapRightY = cv2.initUndistortRectifyMap(calibrations[2].cameraMatrix, calibrations[2].distCoeffs, R2, P2, imageSize, cv2.CV_16SC2)
 
-    sourceLeft = cv2.imread('/home/user/workspace/cfnmxl/ssis_orchard_imaging/tmp/Lucid_213500023-20220708-102603-tonemapped/img00013_exp1000_2022-07-07_14-50-59-935.tonemapped.png')
-    sourceRight = cv2.imread('/home/user/workspace/cfnmxl/ssis_orchard_imaging/tmp/Lucid_213500031-20220708-102957-tonemapped/img00013_exp1000_2022-07-07_14-50-59-717.tonemapped.png')
+    #sourceLeft = cv2.imread('/home/user/workspace/cfnmxl/ssis_orchard_imaging/tmp/Lucid_213500023-20220708-102603-tonemapped/img00013_exp1000_2022-07-07_14-50-59-935.tonemapped.png')
+    #sourceRight = cv2.imread('/home/user/workspace/cfnmxl/ssis_orchard_imaging/tmp/Lucid_213500031-20220708-102957-tonemapped/img00013_exp1000_2022-07-07_14-50-59-717.tonemapped.png')
+    sourceLeft = cv2.imread('/home/user/workspace/cfnmxl/stereo-tuner/Lucid_213500023-img00000_exp1000_2022-04-29_16-35-55-769.tonemapped.png')
+    sourceRight = cv2.imread('/home/user/workspace/cfnmxl/stereo-tuner/Lucid_213500031-img00000_exp1000_2022-04-29_16-35-55-468.tonemapped.png')
     cv2.imwrite('./tmp/sourceLeft.png', sourceLeft)
     cv2.imwrite('./tmp/sourceRight.png', sourceRight)
 
@@ -85,13 +87,15 @@ if __name__ == "__main__":
     cv2.imwrite('./tmp/leftRect.png', leftImage)
     cv2.imwrite('./tmp/rightRect.png', rightImage)    
 
-    stereo = cv2.StereoBM_create(128, 27)
+    stereo = cv2.StereoBM_create(640, 17)
+    stereo.setPreFilterCap(7)
+    stereo.setPreFilterSize(17)
     stereo.setMinDisparity(0)
     disparity = stereo.compute(leftImage, rightImage).astype(float) / 16.
     
     disp8bit=cv2.convertScaleAbs(disparity)
     cv2.imwrite('./tmp/disp.png', disp8bit)
  
-    xyz=cv2.reprojectImageTo3D(disparity, Q)
-    
-    
+    xyz=cv2.reprojectImageTo3D(disparity.astype(np.float32), Q)
+
+    np.savetxt('./tmp/ptcloud.xyz', np.reshape(xyz, (1080*1920,3)), delimiter=",", fmt='%.4f')
