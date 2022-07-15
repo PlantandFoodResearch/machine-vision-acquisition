@@ -57,7 +57,7 @@ if __name__ == "__main__":
     #https://answers.opencv.org/question/89968/how-to-derive-relative-r-and-t-from-camera-extrinsics/
     R=np.matmul(np.linalg.inv(r1[0]), r2[0])
     T=np.matmul(r1[0].T, calibrations[2].tvec.T) - np.matmul(r1[0].T, calibrations[1].tvec.T)
-    imageSize=[1920, 1080]
+    imageSize=[1920, 1200]
     R1 = np.zeros(shape=(3,3))
     R2 = np.zeros(shape=(3,3))
     P1 = np.zeros(shape=(3,4))
@@ -91,11 +91,11 @@ if __name__ == "__main__":
     stereo.setPreFilterCap(7)
     stereo.setPreFilterSize(17)
     stereo.setMinDisparity(0)
-    disparity = stereo.compute(leftImage, rightImage).astype(float) / 16.
+    disparity = stereo.compute(leftImage, rightImage).astype(np.float32) / 16.
     
     disp8bit=cv2.convertScaleAbs(disparity)
     cv2.imwrite('./tmp/disp.png', disp8bit)
  
-    xyz=cv2.reprojectImageTo3D(disparity.astype(np.float32), Q)
+    xyz=cv2.reprojectImageTo3D(disparity, Q, True)
 
-    np.savetxt('./tmp/ptcloud.xyz', np.reshape(xyz, (1080*1920,3)), delimiter=",", fmt='%.4f')
+    np.savetxt('./tmp/ptcloud.xyz', np.reshape(xyz, (1200*1920,3)), delimiter=",", fmt='%.4f')
