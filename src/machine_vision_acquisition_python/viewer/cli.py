@@ -3,7 +3,6 @@ import logging
 import cv2
 import os
 import typing
-import fpnge
 import ctypes
 import numpy as np
 from pathlib import Path
@@ -186,12 +185,8 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                                 / f"{camera.cached_image_time}-{camera.name}-snapshot-{snap_counter}.png"
                             )
                             camera_dir_intensity.mkdir(exist_ok=True)
-                            if file_path_intensity.suffix.lower() == ".png":
-                                fpnge_image = fpnge.fromNP(image_intensity)
-                                file_path_intensity.write_bytes(fpnge_image)
-                            else:
-                                if cv2.imwrite(str(file_path_intensity), image_intensity):
-                                    log.debug(f"Saved {file_path_intensity}")
+                            if cv2.imwrite(str(file_path_intensity), image_intensity):
+                                log.debug(f"Saved {file_path_intensity}")
                     elif ch == "t":
                         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
                         image = cvt_tonemap_image(image)
@@ -200,12 +195,8 @@ def cli(name: str, all: bool, out_dir, factory_reset: bool, tof: bool):
                             / f"{camera.cached_image_time}-{camera.name}-snapshot-tonemapped-{snap_counter}.png"
                         )
                     file_path.parent.mkdir(exist_ok=True)
-                    if file_path.suffix.lower() == ".png":
-                        fpnge_image = fpnge.fromNP(image)
-                        file_path.write_bytes(fpnge_image)
-                    else:
-                        cv2.imwrite(str(file_path), image)
-                    log.debug(f"Saved {file_path}")
+                    if cv2.imwrite(str(file_path), image):
+                        log.debug(f"Saved {file_path}")
     except SystemExit as _:
         pass  # CTRL-C
     finally:

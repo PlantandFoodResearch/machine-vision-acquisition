@@ -9,7 +9,6 @@ import atexit
 import time
 import functools
 import numpy as np
-import fpnge
 from pathlib import Path
 from machine_vision_acquisition_python.interfaces.aravis import (
     CameraHelper,
@@ -122,12 +121,8 @@ def save_current_frame(
     # Will give names like: "Grasshopper3-GS3-U3-23S6C-15122686-2022-06-20T00-22-44-209.png"
     img_path = out_dir / f"{camera.short_name}-{pathsafe_time_str}.png"
     out_dir.mkdir(parents=True, exist_ok=True)
-    if img_path.suffix.lower() == ".png":
-        fpnge_image = fpnge.fromNP(image)
-        img_path.write_bytes(fpnge_image)
-    else:
-        if not cv2.imwrite(str(img_path), image):
-            raise ValueError("Could not write PNG file")
+    if not cv2.imwrite(str(img_path), image):
+        raise ValueError("Could not write PNG file")
     log.info(f"{img_path.name} saved")
 
 
