@@ -5,6 +5,7 @@ import datetime
 import cv2
 import logging
 import json
+import fpnge
 import pandas as pd
 import multiprocessing
 from machine_vision_acquisition_python.calibration.distortion import Undistorter
@@ -137,6 +138,10 @@ def process_file(in_path: Path, out_dir: Path, undistorter: Undistorter):
         undistorter.init_optimal_matrix(image.shape)
     undistored = undistorter.undistort(image)
     output_file_path = out_dir / f"{in_path.stem}.undistorted{in_path.suffix}"
-    if not cv2.imwrite(str(output_file_path), undistored):
-        raise ValueError(f"Failed to write {output_file_path.name}")
+    if output_file_path.suffix.lower() == ".png":
+        fpnge_image = fpnge.fromNP(undistored)
+        output_file_path.write_bytes(fpnge_image)
+    else:
+        if not cv2.imwrite(str(output_file_path), undistored):
+            raise ValueError(f"Failed to write {output_file_path.name}")
     log.info(f"Undistorted {in_path.name}")

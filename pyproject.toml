@@ -21,6 +21,7 @@ sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"
 openpyxl = "^3.0.10"
 opencv-python-headless = "^4.6.0"
+fpnge = {git = "https://github.com/animetosho/python-fpnge"}
 
 [tool.poetry.dev-dependencies]
 black = {version = "^22.3.0"}

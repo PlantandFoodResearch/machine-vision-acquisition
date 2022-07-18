@@ -4,7 +4,7 @@ import typing
 import datetime
 import cv2
 import logging
-import json
+import fpnge
 import multiprocessing
 from machine_vision_acquisition_python.process.processing import cvt_tonemap_image
 
@@ -112,5 +112,9 @@ def process_file(in_path: Path, out_dir: Path, tonemap: bool):
     image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
     if tonemap:
         image = cvt_tonemap_image(image)
-    if not cv2.imwrite(str(out_path), image):
-        raise ValueError(f"Failed to write {out_path.name}")
+    if out_path.suffix.lower() == ".png":
+        fpnge_image = fpnge.fromNP(cvt_tonemap_image(image))
+        out_path.write_bytes(fpnge_image)
+    else:
+        if not cv2.imwrite(str(out_path), image):
+            raise ValueError(f"Failed to write {out_path.name}")
