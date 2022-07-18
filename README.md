@@ -196,3 +196,8 @@ Follow the `udev` advice here: https://aravisproject.github.io/aravis/usb.html
 * Often you must use `sudo -E` to access USB devices. Try this first.
 * Replugged (or reset) USB devices are not being refreshed in docker container. This should have been fixed, otherwise: `https://www.balena.io/docs/reference/base-images/base-images/#working-with-dynamically-plugged-devices` might serve as a starting point. Or `https://github.com/moby/moby/issues/35359`. Or `https://forums.docker.com/t/usb-device-not-working-not-sure-why/1143/3`
 
+### FPNGE Bug:
+You currently must manually install FPNGE:
+```bash
+pip install https://github.com/animetosho/python-fpnge/tarball/master
+```
