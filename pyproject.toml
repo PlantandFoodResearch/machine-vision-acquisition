@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "machine_vision_acquisition_python"
-version = "0.2.3"
+version = "0.2.4"
 description = "PFR library for machine vision interfacing"
 authors = ["Manu Lange <manu.lange@plantandfood.co.nz>"]
 packages = [
@@ -21,6 +21,7 @@ sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"
 openpyxl = "^3.0.10"
 opencv-python-headless = "^4.6.0"
+fpnge = {git = "https://github.com/animetosho/python-fpnge"}
 
 [tool.poetry.dev-dependencies]
 black = {version = "^22.3.0"}
