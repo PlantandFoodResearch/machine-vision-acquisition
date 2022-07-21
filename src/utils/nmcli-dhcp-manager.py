@@ -18,10 +18,20 @@ import typing
 import ipaddress
 import subprocess
 import time
+import tempfile
+from pathlib import Path
 
 
 log = logging.getLogger("nmcli-dhcp-manager")
 logging.basicConfig(level=logging.DEBUG)
+
+
+DHCPD_CONF_STUB = """
+subnet {interface} netmask {netmask} {{
+ range {range_start} {range_stop};
+ option routers {router_ipv4};
+}}
+"""
 
 
 @click.command()
@@ -34,7 +44,7 @@ logging.basicConfig(level=logging.DEBUG)
 @click.option(
     "--ip-addresses",
     "-ip",
-    help="IP address range to use",
+    help="IP address range to use. Each extra adapter will use an incremented /24 range!",
     default="192.168.1.1/24",
     show_default=True,
 )
@@ -59,20 +69,25 @@ def cli(devices: str, ip_addresses: str, mtu: int):
     log.debug(
         f"Matched connections: {[connection.name for connection in connections_to_control]}"
     )
-    ip_addresses_generator = ip_interface.network.hosts()
+    ip_interface_current = ip_interface
+    device_interface_list = []
     for connection in connections_to_control:
         # A little icky, but generate the next ip address in this network range
+        ip_addresses_generator = ip_interface_current.network.hosts()
         ip_address = next(ip_addresses_generator)  # type: ignore
-        ip_interface_current = ipaddress.IPv4Interface(
-            f"{ip_address.compressed}/{ip_interface.compressed.split('/')[1]}"
+        ip_interface_actual = ipaddress.IPv4Interface(
+            f"{ip_address.compressed}/{ip_interface_current.compressed.split('/')[1]}"
         )
-        set_static_ip(connection, ip_interface_current)
+        set_static_ip(connection, ip_interface_actual)
         set_mtu(connection, mtu)
         reset_connection(connection)
-        log.info(f"Reset {connection.name}")
+        device_interface_list.append((connection, ip_interface_actual))
+        log.info(f"Reset {connection.name} with {ip_interface_actual}")
+        # This is pretty icky, but increments '192.168.1.0/24' -> '192.168.2.0/24'
+        ip_interface_current = ipaddress.IPv4Interface(f"{(ip_interface_current+255).compressed.split('/')[0]}/{ip_interface_current.compressed.split('/')[1]}")
     log.debug("Waiting 10 seconds for connections to settle")
     time.sleep(10.0)
-    restart_dhcp()
+    restart_dhcp(device_interface_list)
 
 
 def get_matched_devices(
@@ -136,10 +151,36 @@ def reset_connection(connection: nmcli.data.connection.Connection):
     nmcli.connection.up(connection.name, wait=60)
 
 
-def restart_dhcp():
+def create_new_dhcpd_conf(device_interface_list):
+    raise NotImplementedError("Todo")
+    file_buffer = ""
+    for device, interface in device_interface_list:
+        file_buffer += DHCPD_CONF_STUB.format(
+            interface="",
+            netmask="",
+            range_start="",
+            range_stop="",
+            router_ipv4=""
+        )
+    with tempfile.NamedTemporaryFile(mode="wt") as tmpfile:
+        tmpfile.write(file_buffer)
+        # Sudo replace old file
+        command_cp = [
+            "sudo",
+            "--non-interactive",
+            "-E",
+            "cp",
+            f"{Path(tmpfile.name).resolve()}",
+            f"{Path('/etc/dhcp/dhcpd.conf').resolve()}",
+        ]
+        # subprocess.check_call(command_cp)
+
+
+def restart_dhcp(device_interface_list):
     """Uses systemctl to restart isc-dhcpd server.
 
     Note: it is not (yet) in scope to dynamically update the '/etc/dhcp/dhcpd.conf' file."""
+    # create_new_dhcpd_conf(device_interface_list)
     command_restart = [
         "sudo",
         "--non-interactive",
