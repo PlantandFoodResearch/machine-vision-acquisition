@@ -3,6 +3,7 @@ import click
 import json
 import logging
 import cv2
+import os
 import threading
 from typing import Optional, Dict, List
 import atexit
@@ -134,6 +135,7 @@ def liveview_web(cameras: List[CameraHelper]):
 
     log.info(f"starting webserver")
     try:
-        app.run(host="0.0.0.0", debug=False)
+        port = int(os.getenv("HTTP_PORT", "5000"), base=10)
+        app.run(host="0.0.0.0", port=port, debug=False)
     finally:
         log.info(f"stopping webserver")
