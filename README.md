@@ -98,56 +98,12 @@ To use these tools, if they are python, ensure you have the dependencies install
 
 In general the tools are called `mva_*` and use `click` with sub-commands.
 
-### **mva_viewer**: CLI Image Viewer and Save tool
-Mainly in [viewer.cli](./src/machine_vision_acquisition_python/viewer/cli.py). View CLI help for info:
-```
-mva_viewer --help
-Usage: mva_viewer [OPTIONS]
+### **mva_capture**: Generic Camera Capture CLI interface
+Mainly in [capture](./src/machine_vision_acquisition_python/capture/capture.py). View CLI help for info: `mva_capture --help`
 
-  Simple camera snapshot grabber and saver. Hotkeys:
-
-  * 'q' to exit
-
-  * 'e' to auto expose (run cameras for 5s each)
-
-  * 'n' to grab new frames from cameras (software triggered, not synchronised)
-
-  * 's' to save the displayed frame (as non-processed BayerRG12 PNG)
-
-  * 't' to save the displayed frame (as tonemapped RGB PNG)
-
-  * 'p' to toggle PTP mode (and print stats)
-
-Options:
-  -n, --name TEXT          Camera name to connect to. Defaults to None which
-                           will randomly select a camera
-  -t, --tof BOOLEAN        Attempt to use Chronoptics camera
-  --all                    Open all cameras at once
-  -o, --out-dir DIRECTORY  Directory to save output too
-  --factory-reset          Performs a factory reset only and then exits
-  --help                   Show this message and exit.
-```
-
-Example to run with all cameras and forward display to x11 (These should be automatically set in the containers):
+This tool uses a JSON config file. See [capture-config.json](etc/capture-config.json) for an example. Create a copy, and modify it to your needs. Then run mva_capture:
 ```bash
-$ DISPLAY=localhost:10.0 LIBGL_ALWAYS_INDIRECT=1 mva_viewer --all --out-dir=./tmp/data-root/manu/
-# Example output if you pressed 'n' followed by 's', then 'q' to quit. "169.254.27.139" is the Chronoptics camera and can safely be ignored.
-$ mva_viewer --all --out-dir=./tmp/data-root/temp/
-INFO:machine_vision_acquisition_python.viewer.cli:Opened ATL314S-C-220700207
-INFO:machine_vision_acquisition_python.viewer.cli:Opened TRI023S-C-213902307
-INFO:machine_vision_acquisition_python.viewer.cli:Opened TRI023S-C-213902309
-DEBUG:machine_vision_acquisition_python.viewer.cli:Acquiring image for ATL314S-C-220700207 took: 0.3851250330917537
-DEBUG:machine_vision_acquisition_python.viewer.cli:Acquiring image for TRI023S-C-213902307 took: 0.09678720706142485
-DEBUG:machine_vision_acquisition_python.viewer.cli:Acquiring image for TRI023S-C-213902309 took: 0.09508740995079279
-DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu/2022-04-14T164139-ATL314S-C-220700207-snapshot-1.png
-DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu/2022-04-14T164139-TRI023S-C-213902307-snapshot-1.png
-DEBUG:machine_vision_acquisition_python.viewer.cli:Saved /src/tmp/data-root/manu/2022-04-14T164139-TRI023S-C-213902309-snapshot-1.png
-```
-
-#### Chronoptics ToF Camera viewer
-This is a sub-command of `mva_viewer`:
-```
-mva_viewer --tof=True --help
+HTTP_PORT=5000 mva_capture --config ./etc/capture-config.json
 ```
 
 ### **mva_process**: CLI Batch image file processor
