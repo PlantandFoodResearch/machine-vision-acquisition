@@ -1,4 +1,5 @@
 from typing import Optional, Tuple
+from numpy.typing import NDArray
 import numpy as np
 import numpy.typing as npt
 from pathlib import Path
@@ -6,12 +7,14 @@ import cv2
 
 
 class Calibration:
-    def __init__(self, name_or_serial, cameraMatrix, distCoeffs, rvec, tvec) -> None:
-        self.serial = name_or_serial
-        self.cameraMatrix = cameraMatrix
-        self.distCoeffs = distCoeffs
-        self.rvec = rvec
-        self.tvec = tvec
+    def __init__(self, name_or_serial, cameraMatrix, distCoeffs, rvec, tvec, image_width, image_height) -> None:
+        self.serial: str = name_or_serial
+        self.cameraMatrix: NDArray = cameraMatrix
+        self.distCoeffs: NDArray = distCoeffs
+        self.rvec: NDArray = rvec
+        self.tvec: NDArray = tvec
+        self.image_width: int = image_width
+        self.image_height: int = image_height
 
     def write_opencv_yaml(self, filepath: Path):
         """Writes out these calibration values in the opencv YAML format"""
