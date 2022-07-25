@@ -58,7 +58,7 @@ log.setLevel(logging.DEBUG)
 @click.option(
     "--webviewer",
     "-w",
-    help="Run a webserver that hosts the output streams (experimental!). The port it is served on can be controlled with the environment variable 'HTTP_POT'.",
+    help="Run a webserver that hosts the output streams (experimental!). The port it is served on can be controlled with the environment variable 'HTTP_PORT'.",
     is_flag=True,
     default=False,
 )
@@ -131,10 +131,9 @@ def save_current_frame(
     # Will give names like: "Grasshopper3-GS3-U3-23S6C-15122686-2022-06-20T00-22-44-209.png"
     
     # Can be overridden to be a simpe index (for calibration)
-    if image_index:
-        log.debug(f"Using index {image_index} instead of time {pathsafe_time_str}")
-        pathsafe_time_str = f"-{image_index}"
     img_path = out_dir / f"{camera.short_name}-{pathsafe_time_str}.png"
+    if image_index:
+        img_path = out_dir / f"{image_index}-{camera.short_name}-{pathsafe_time_str}.png"
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
         import fpnge
