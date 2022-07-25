@@ -31,6 +31,7 @@ from flask.wrappers import Response
 import os
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 @click.command()
@@ -54,7 +55,14 @@ log = logging.getLogger(__name__)
         file_okay=False, dir_okay=True, readable=True, path_type=Path
     ),
 )
-def cli(config_path: Path, out_dir: Optional[Path]):
+@click.option(
+    "--webviewer",
+    "-w",
+    help="Run a webserver that hosts the output streams (experimental!). The port it is served on can be controlled with the environment variable 'HTTP_POT'.",
+    is_flag=True,
+    default=False,
+)
+def cli(config_path: Path, out_dir: Optional[Path], webviewer: bool):
     """
     Basic camera capturing from a config file. Once loaded, will attempt to open and set all parameters, then begin acquisition.
     Can host basic webpage to preview the live camera output.
@@ -70,7 +78,7 @@ def cli(config_path: Path, out_dir: Optional[Path]):
     out_dir = Path(json_config.setdefault("output_directory", str(out_dir)))
     config: Config = Config(**json_config)
     log.info(f"Opening {len(config.cameras)} cameras with {out_dir}")
-    main(config)
+    main(config, webviewer)
 
 
 def open_cameras(config: Config) -> List[CameraHelper]:
@@ -99,7 +107,7 @@ def set_camera_params(config: Config, cameras: List[CameraHelper]) -> None:
 
 
 def save_current_frame(
-    camera: CameraHelper, out_dir: Optional[Path] = None, debayer: bool = True
+    camera: CameraHelper, out_dir: Optional[Path] = None, debayer: bool = True, tonemap: bool = True, image_index: Optional[int] = None
 ):
     if out_dir is None:
         out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
@@ -114,30 +122,47 @@ def save_current_frame(
         return
     if debayer:
         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+    if tonemap:
+        image = cvt_tonemap_image(image)
     # Will result in  YYYY-MM-DDTHH-mm-ss-[ms*3] e.g. 2022-06-20T00-22-44-209
     pathsafe_time_str = (
         np.datetime_as_string(image_time, unit="ms").replace(":", "-").replace(".", "-")
     )
     # Will give names like: "Grasshopper3-GS3-U3-23S6C-15122686-2022-06-20T00-22-44-209.png"
+    
+    # Can be overridden to be a simpe index (for calibration)
+    if image_index:
+        log.debug(f"Using index {image_index} instead of time {pathsafe_time_str}")
+        pathsafe_time_str = f"-{image_index}"
     img_path = out_dir / f"{camera.short_name}-{pathsafe_time_str}.png"
     out_dir.mkdir(parents=True, exist_ok=True)
-    if not cv2.imwrite(str(img_path), image):
-        raise ValueError("Could not write PNG file")
+    try:
+        import fpnge
+        fpnge_bytes = fpnge.fromMat(image)
+        img_path.write_bytes(fpnge_bytes)
+    except ImportError as _:
+        log.warning(f"Must install python fpnge bindings for faster PNG saving: https://github.com/animetosho/python-fpnge.")
+        if not cv2.imwrite(str(img_path), image):
+            raise ValueError("Could not write PNG file")
     log.info(f"{img_path.name} saved")
 
 
 def save_all_images_cb(cameras: List[CameraHelper], root_dir: Path):
+    # Trigger all
+    for camera in cameras:
+        camera.camera.software_trigger()
     # Cache the worker pool
     if getattr(save_all_images_cb, "executor", None) is None:
         save_all_images_cb.executor = ThreadPoolExecutor(max_workers=len(cameras))
     exec: ThreadPoolExecutor = save_all_images_cb.executor
     for camera in cameras:
         out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
-        job = functools.partial(save_current_frame, camera, out_dir)
+        job = functools.partial(save_current_frame, camera, out_dir, debayer=True, tonemap=True, image_index=save_all_images_cb.index)
         exec.submit(job)
+    save_all_images_cb.index += 1
+save_all_images_cb.index = 1
 
-
-def main(config: Config):
+def main(config: Config, webviewer):
     cameras = open_cameras(config)
     # Set all camera properties
     set_camera_params(config=config, cameras=cameras)
@@ -183,7 +208,14 @@ def main(config: Config):
     try:
         cb = functools.partial(save_all_images_cb, cameras, config.output_directory)
         register_callback("s", cb)
-        liveview_web(cameras)
+        if webviewer:
+            # blocks forever
+            liveview_web(cameras)
+        else:
+            # sleep forever
+            log.info(f"Setup done, press 's' to capture an image or CTRL-C to exit")
+            while True:
+                time.sleep(1.0)
         # test_print_all(cameras)
         # while True:
         # time.sleep(5.0)
