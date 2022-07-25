@@ -58,12 +58,13 @@ def read_calib_parameters(calibio_json: Path):
         cam_matrix, distortion_matrix = read_camera_intrinsics(intrinsics)
         transform = camera["transform"]
         rvec, tvec = read_camera_extrinsics(transform)
+        image_size = camera["model"]["ptr_wrapper"]["data"]["CameraModelCRT"]["CameraModelBase"]["imageSize"]
         #TODO add imageSize here
         # todo: get serial mappings
         serial = camera.get("serial", "unknown")
         if serial == "unknown":
             log.warning(f"calibration does not reference camera serial, is it present?")
-        calib = Calibration(serial, cam_matrix, distortion_matrix, rvec, tvec)
+        calib = Calibration(serial, cam_matrix, distortion_matrix, rvec, tvec, image_size["width"], image_size["height"])
         # Use openCV naming
         camera_calibrations.append(calib)
     return camera_calibrations
