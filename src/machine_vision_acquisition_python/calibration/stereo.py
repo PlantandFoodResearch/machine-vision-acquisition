@@ -5,7 +5,6 @@ import numpy as np
 from numpy.typing import NDArray
 from torch.autograd import Variable
 import cv2
-from scipy.spatial.transform 
 import logging
 from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters, Calibration
 from pyntcloud import PyntCloud

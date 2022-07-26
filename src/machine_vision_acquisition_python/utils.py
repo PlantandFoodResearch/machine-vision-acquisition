@@ -26,7 +26,7 @@ except ImportError as _:
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from machine_vision_acquisition_python.viewer.cli import CameraHelper
+    from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
 
 
 def save_png(path: Path, image: cv2.Mat, mkdir: bool = False) -> None:
