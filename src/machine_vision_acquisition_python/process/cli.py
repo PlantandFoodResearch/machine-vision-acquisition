@@ -16,6 +16,7 @@ from machine_vision_acquisition_python.utils import (
 from machine_vision_acquisition_python.process.commands.stats import stats
 from machine_vision_acquisition_python.process.commands.convert import convert
 from machine_vision_acquisition_python.process.commands.undistort import undistort
+from machine_vision_acquisition_python.process.commands.stereo import stereo
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ _DEFAULT_NPROC = multiprocessing.cpu_count()
         stats,
         convert,
         undistort,
+        stereo,
     ]
 )
 @click.option("--debug", is_flag=True)

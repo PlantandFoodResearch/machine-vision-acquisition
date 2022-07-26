@@ -2,19 +2,28 @@
 Provides a python interface to libcalib: https://downloads.calib.io/libcalib/doc/
 """
 import json
-import cv2
-from math import acos, sqrt
-from typing import List
 import logging
-import numpy as np
-from sys import float_info
 from pathlib import Path
-from machine_vision_acquisition_python.calibration.distortion import Calibration
+from typing import List
+
+import numpy as np
+from numpy.typing import NDArray
 
 log = logging.getLogger(__name__)
 
 
 TEMP_FILE_PATH = r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/calibration-images/caloutput.json"
+
+
+class Calibration:
+    def __init__(self, name_or_serial, cameraMatrix, distCoeffs, rvec, tvec, image_width, image_height) -> None:
+        self.serial: str = name_or_serial
+        self.cameraMatrix: NDArray = cameraMatrix
+        self.distCoeffs: NDArray = distCoeffs
+        self.rvec: NDArray = rvec
+        self.tvec: NDArray = tvec
+        self.image_width: int = image_width
+        self.image_height: int = image_height
 
 
 def read_calib_parameters(calibio_json: Path):
