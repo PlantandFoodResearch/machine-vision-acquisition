@@ -48,6 +48,9 @@
         "streambuf": "cpp",
         "typeinfo": "cpp"
     },
+    "python.analysis.extraPaths": [
+        "/home/user/workspace/cfnmxl/high-res-stereo"
+    ],
     "cmake.sourceDirectory": "${workspaceFolder}/examples",
     "json.schemas": [
         {
