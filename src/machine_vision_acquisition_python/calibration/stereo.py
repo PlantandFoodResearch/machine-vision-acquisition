@@ -139,8 +139,12 @@ class StereoProcessor:
         # Normalise
         invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
         new_max_value = np.iinfo(np.uint16).max
-        log.debug(f"normalising disparity max from {disparity/disparity[~invalid].max()} to {new_max_value}")
-        disp_16b = (disparity/disparity[~invalid].max()*new_max_value).astype(np.uint16)
+        old_max = disparity[~invalid].max()
+        if old_max <= 0:
+            log.debug("clipping old max < 0 to 1")
+            old_max = 1.0
+        log.debug(f"normalising disparity max from {old_max} to {new_max_value}")
+        disp_16b = (disparity/old_max*new_max_value).astype(np.uint16)  # type: ignore
         return disp_16b
 
     @staticmethod
@@ -148,8 +152,12 @@ class StereoProcessor:
         """Given the processed disparity image (with invalid pixels set to np.inf), return a normalised 8b disparity map"""
         invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
         new_max_value = np.iinfo(np.uint8).max
-        log.debug(f"normalising disparity max from {disparity/disparity[~invalid].max()} to {new_max_value}")
-        disp_8b = (disparity/disparity[~invalid].max()*new_max_value).astype(np.uint8)
+        old_max = disparity[~invalid].max()
+        if old_max <= 0:
+            log.debug("clipping old max < 0 to 1")
+            old_max = 1.0
+        log.debug(f"normalising disparity max from {old_max} to {new_max_value}")
+        disp_8b = (disparity/old_max*new_max_value).astype(np.uint8)  # type: ignore
         return disp_8b
 
     @staticmethod
@@ -405,7 +413,7 @@ if __name__ == "__main__":
 
     disparity_raw = stereo_engine.calculate_disparity(left_remapped, right_remapped)
 
-    tx = -380  # px
+    tx = -340  # px
     ty = 0  # px
     translation_matrix = np.float32([[1,0,tx], [0,1,ty]])
     num_rows, num_cols = disparity_raw.shape[:2]

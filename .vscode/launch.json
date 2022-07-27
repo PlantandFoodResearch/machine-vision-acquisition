@@ -75,7 +75,7 @@
             "args": [
                 "stereo",
                 "--input",
-                "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2",
+                "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/stereo",
                 "--calibio-json",
                 "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/calibration-images/caloutput.json",
                 "--serial-left",
@@ -83,7 +83,7 @@
                 "--serial-right",
                 "213500031",
                 "--output",
-                "${workspaceFolder}/tmp/stereo/2022-07-21/2"
+                "${workspaceFolder}/tmp/stereo/tmp"
             ],
             "justMyCode": true
         },

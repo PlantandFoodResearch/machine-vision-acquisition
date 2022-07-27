@@ -253,8 +253,10 @@ def process_file(left_path: Path, right_path: Path, out_path: Path, stereo: Ster
     disparity_shifted =  stereo.shift_disp_down(disp)
     disp_visual = stereo.normalise_disparity_8b(disparity_shifted)
     # move to align roughly with original image.
-    # NOTE: the value of ~380px is experimentally determined. A proper remap inversion should be done
-    tx = -380  # px
+    # NOTE: the value of ~340 is experimentally determined. A proper remap inversion should be done
+    # Alternative: -291
+    # Possibly: https://stackoverflow.com/questions/41703210/inverting-a-real-valued-index-grid
+    tx = -340  # px
     ty = 0  # px
     translation_matrix = np.float32([[1,0,tx], [0,1,ty]])  # type: ignore
     num_rows, num_cols = disp_visual.shape[:2]
