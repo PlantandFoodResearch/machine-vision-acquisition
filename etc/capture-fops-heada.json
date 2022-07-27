@@ -2,10 +2,16 @@
   "version": "1",
   "cameras": [
     {
-      "serial" : "220700207"
+      "serial" : "220700207",
+      "params":[
+        {"name": "LineSelector", "value": "Line1" },
+        {"name": "LineMode", "value": "Output" },
+        {"name": "LineSource", "value": "ExposureActive" }
+      ]
     },
     {
-      "serial" : "213902307"
+      "serial" : "213902307",
+      "params":[]
     },
     {
       "serial" : "213902309"
@@ -14,11 +20,10 @@
   "shared_params": [
     {"name": "AcquisitionMode", "value": "Continuous"},
     {"name": "AcquisitionFrameRateEnable", "value": true, "val_type": "bool"},
-    {"name": "AcquisitionFrameRate", "value": 1.0},
+    {"name": "AcquisitionFrameRate", "value": 1},
     {"name": "TriggerSource", "value" : "Software"},
-    {"name": "ExposureAuto", "value": "Off"},
-    {"name": "GainAuto", "value": "Off"},
-    {"name": "ExposureTime", "value": 5000},
+    {"name": "ExposureAuto", "value": "Continuous"},
+    {"name": "GainAuto", "value": "Continuous"},
     {"name": "Gain", "value": 0.0}
   ]
 }
