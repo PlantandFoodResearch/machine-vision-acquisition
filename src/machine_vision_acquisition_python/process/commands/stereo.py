@@ -42,6 +42,21 @@ def init_child(lock_):
     ),
 )
 @click.option(
+    "--hsm-model",
+    "-hm",
+    "hsm_model_path",
+    help="Path a trained HSM model (see https://github.com/nznobody/high-res-stereo).",
+    required=True,
+    type=click.types.Path(
+        dir_okay=False,
+        file_okay=True,
+        exists=True,
+        readable=True,
+        path_type=Path,
+        resolve_path=True,
+    ),
+)
+@click.option(
     "--input",
     "-i",
     "input_path",
@@ -74,11 +89,19 @@ def init_child(lock_):
 )
 @click.option(
     "--disparity-max",
-    "-dm",
+    "-dmmax",
     "disparity_max",
     help="Maximum disparity value to use for stereo engine.",
     type=click.types.INT,
     default=1024,
+)
+@click.option(
+    "--disparity-min",
+    "-dmin",
+    "disparity_min",
+    help="Maximum disparity value to use for stereo engine.",
+    type=click.types.INT,
+    default=340,
 )
 @click.option(
     "--output",
@@ -115,10 +138,12 @@ def init_child(lock_):
 def stereo(
     ctx: click.Context,
     calibio_json_path: Path,
+    hsm_model_path: Path,
     input_path: Path,
     serial_left: str,
     serial_right: str,
     disparity_max: int,
+    disparity_min: int,
     output_path: typing.Optional[Path],
     disparity_16b_normalised: bool,
     pointcloud: bool
@@ -128,6 +153,7 @@ def stereo(
     """
 
     nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
+    log.warning("This code is experimental!")
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -184,9 +210,10 @@ def stereo(
     stereo = StereoProcessorHSM(
         calibration_left=calib_left,
         calibration_right=calib_right,
-        min_disparity=340,
+        min_disparity=disparity_min,
         max_disparity=disparity_max,
         rescale_factor=1.0,
+        hsm_model_path=hsm_model_path
     )
 
     # Multiproc init

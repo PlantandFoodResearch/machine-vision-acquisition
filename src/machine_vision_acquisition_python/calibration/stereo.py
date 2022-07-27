@@ -3,8 +3,12 @@ from typing import Optional, Tuple, Any
 from cv2 import CALIB_ZERO_DISPARITY
 import numpy as np
 from numpy.typing import NDArray
+import torch
+import high_res_stereo.utils.model
+import high_res_stereo.utils.inference
 from torch.autograd import Variable
 import cv2
+import os
 import logging
 from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters, Calibration
 from pyntcloud import PyntCloud
@@ -174,6 +178,7 @@ class StereoProcessor:
 
     def disparity_to_pointcloud(self, disparity: cv2.Mat, left_remapped: cv2.Mat, min_disp: Optional[int] = None, max_disp: Optional[int] = None) -> PyntCloud:
         """Convert raw disparity output to coloured pointcloud"""
+        log.warning(f"This code is experimental at best!")
         if min_disp is not None and max_disp:
             mask = np.ma.masked_inside(disparity, min_disp, max_disp)
             disparity = mask.data
@@ -220,15 +225,19 @@ class StereoProcessorHSM(StereoProcessor):
         min_disparity=0,
         max_disparity=256,
         rescale_factor=1.0,
-        clean=-1
+        clean=-1,
+        hsm_model_path: Optional[Path] = None
     ) -> None:
         super().__init__(calibration_left, calibration_right)
-        hsm_path = Path(r"/home/user/workspace/cfnmxl/high-res-stereo").resolve()
-        hsm_script = hsm_path / "calculate_disparity.py"
-        hsm_model_path = hsm_path / "pretrained-models" / "middlebury-final-768px.tar"
-        if not hsm_script.exists() or not hsm_model_path.exists():
+        hsm_model_path_env = os.environ.get("HSM_MODEL_PATH", None)
+        if hsm_model_path_env is not None and Path(hsm_model_path_env).resolve().exists():
+            hsm_model_path = Path(hsm_model_path_env).resolve()
+            log.debug(f"StereoProcessorHSM using model: {hsm_model_path}")
+        if hsm_model_path is None:
+            raise ValueError("StereoProcessorHSM must be provided with a trained model either via 'hsm_model_path' or ENV 'HSM_MODEL_PATH'")
+        if not hsm_model_path.exists():
             raise FileNotFoundError(
-                f"Could not locate HSM {hsm_script} or pre-trained model"
+                f"Could not locate HSM pre-trained model: {{hsm_model_path}}"
             )
         self.rescale_factor = rescale_factor
         self.min_disp = min_disparity
@@ -246,25 +255,8 @@ class StereoProcessorHSM(StereoProcessor):
         if clean != -1:
             log.warning(f"Values for clean of anything other than -1 are not understood")
         self.clean = clean
-        try:
-            import torch
-            import torchvision
-            if not torch.cuda.is_available():
-                raise NotImplementedError(
-                    "Cannot run without CUDA (technically it can, but not implemented"
-                )
-        except ImportError as _:
-            log.exception(
-                "Cannot use StereoProcessorHSM without optional 'torch' installed. Run 'pip install torch'."
-            )
-        # patch in module
-        import sys
 
-        sys.path.append(str(hsm_path))
-
-        from utils.model import load_model
-
-        self.model, _, _ = load_model(
+        self.model, _, _ = high_res_stereo.utils.model.load_model(
             model_path=str(hsm_model_path),
             max_disp=self.num_disparities,
             # Todo: play around with clean parameter
@@ -276,13 +268,11 @@ class StereoProcessorHSM(StereoProcessor):
         self.module = self.model.module
 
     def calculate_disparity(self, left_remapped: cv2.Mat, right_remapped: cv2.Mat):
-        from utils.inference import prepare_image_pair, perform_inference
-        import torch
-        imgL, imgR, img_size_in, img_size_in_scaled, img_size_net_in = prepare_image_pair(left_remapped, right_remapped, self.rescale_factor)
+        imgL, imgR, img_size_in, img_size_in_scaled, img_size_net_in = high_res_stereo.utils.inference.prepare_image_pair(left_remapped, right_remapped, self.rescale_factor)
         # Load to GPU
         imgL = Variable(torch.FloatTensor(imgL).cuda())
         imgR = Variable(torch.FloatTensor(imgR).cuda())
-        disparity, entropy, _ = perform_inference(self.model, imgL, imgR, True)
+        disparity, entropy, _ = high_res_stereo.utils.inference.perform_inference(self.model, imgL, imgR, True)
         disparity = torch.squeeze(disparity).data.cpu().numpy()
         entropy = torch.squeeze(entropy).data.cpu().numpy()
         torch.cuda.empty_cache()
@@ -372,7 +362,8 @@ if __name__ == "__main__":
     # )
 
     stereo_engine = StereoProcessorHSM(
-        calibrations[1], calibrations[2], min_disparity=340, max_disparity=960, rescale_factor=1.0
+        calibrations[1], calibrations[2], min_disparity=340, max_disparity=960, rescale_factor=1.0,
+        # hsm_model_path=Path(r"/home/user/workspace/cfnmxl/high-res-stereo/pretrained-models/middlebury-final-768px.tar")
     )
 
     # "\\storage.powerplant.pfr.co.nz\input\projects\dhs\smartsensingandimaging\development\fops\2022-07-21\2\Lucid_213500023\img00015_exp1000_2022-07-21_16-17-37-220.png"
@@ -415,7 +406,7 @@ if __name__ == "__main__":
 
     tx = -340  # px
     ty = 0  # px
-    translation_matrix = np.float32([[1,0,tx], [0,1,ty]])
+    translation_matrix = np.float32([[1,0,tx], [0,1,ty]])  # type: ignore
     num_rows, num_cols = disparity_raw.shape[:2]
     img_translation = cv2.warpAffine(disparity_raw, translation_matrix, (num_cols, num_rows))
 

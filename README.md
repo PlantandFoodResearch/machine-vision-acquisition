@@ -164,3 +164,15 @@ You currently must manually install FPNGE:
 ```bash
 pip install https://github.com/animetosho/python-fpnge/tarball/master
 ```
+
+### HSM Stereo:
+The original repo is not PIP-installable :(
+```
+A fork has been created with some fixes and pip installable
+pip install git+https://github.com/nznobody/high-res-stereo
+# download the model
+
+wget http://www.contrib.andrew.cmu.edu/~gengshay/wordpress/wp-content/uploads/2020/01/final-768px.tar -O ./tmp/middlebury-final-768px.tar
+
+export HSM_MODEL_PATH=$(readlink -f ./tmp/middlebury-final-768px.tar)
+```
