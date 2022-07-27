@@ -121,10 +121,17 @@ Commands:
   convert    Batch converts raw 12bit 'PNG' images to de-bayered 12bit...
   stats      Generate basic numerical stats from folders of images...
   undistort  Rectify images using CalibIO and OpenCV from a single camera.
+  stereo     (Experimental) Process left/right image pairs to produce disparity based outputs.
 ```
 **Note**: This is fairly functional without Aravis and so can run outside of Docker/Aravis
 
 **Note**: `convert` can also tonemap 12b images to 8b.
+
+#### Examples
+```bash
+#Stereo:
+mva_process stereo --input /mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2 --serial-left=213500023 --serial-right=213500031 --calibio-json /mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/calibration-images/caloutput.json --output ./tmp/stereo/2022-07-21/disp340-960-16bout/2/ --disparity-max 960
+```
 
 ### Systemd service to restart DHCP and NMCLI connections
 To mitigate issues with the devices not being stable, a quick helper service was created.

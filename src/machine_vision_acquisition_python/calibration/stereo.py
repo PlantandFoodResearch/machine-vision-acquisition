@@ -143,6 +143,27 @@ class StereoProcessor:
         disp_16b = (disparity/disparity[~invalid].max()*new_max_value).astype(np.uint16)
         return disp_16b
 
+    @staticmethod
+    def normalise_disparity_8b(disparity: cv2.Mat) -> cv2.Mat:
+        """Given the processed disparity image (with invalid pixels set to np.inf), return a normalised 8b disparity map"""
+        invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
+        new_max_value = np.iinfo(np.uint8).max
+        log.debug(f"normalising disparity max from {disparity/disparity[~invalid].max()} to {new_max_value}")
+        disp_8b = (disparity/disparity[~invalid].max()*new_max_value).astype(np.uint8)
+        return disp_8b
+
+    @staticmethod
+    def shift_disp_down(disparity: cv2.Mat) -> cv2.Mat:
+        """Compress disparities towards 0 by removing empty space between 0 and first non-zero value"""
+        # Shift back to within 0-255 range (min - max disp needs to be < 254)
+        if disparity.max() <= 0:
+            # nothing to do here, raise error?
+            return disparity
+        non_zero_min = disparity[disparity!=0].min()
+        disparity_false = disparity - (non_zero_min + 1)
+        disparity_false[disparity_false < 0] = 0
+        return disparity_false
+
     def disparity_to_pointcloud(self, disparity: cv2.Mat, left_remapped: cv2.Mat, min_disp: Optional[int] = None, max_disp: Optional[int] = None) -> PyntCloud:
         """Convert raw disparity output to coloured pointcloud"""
         if min_disp is not None and max_disp:
@@ -265,6 +286,9 @@ class StereoProcessorHSM(StereoProcessor):
         if self.rescale_factor != 1.0:
             disparity = cv2.resize(disparity/self.rescale_factor,(img_size_in[1],img_size_in[0]),interpolation=cv2.INTER_LINEAR)
 
+        # clip to min/max disp values requested
+        disparity = cv2.threshold(disparity, thresh=self.min_disp, maxval=0,  type=cv2.THRESH_TOZERO)[1]
+        disparity = cv2.threshold(disparity, thresh=self.max_disp, maxval=0, type=cv2.THRESH_TOZERO_INV)[1]
         # clip while keep inf
         invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
         disparity[invalid] = np.inf
@@ -340,7 +364,7 @@ if __name__ == "__main__":
     # )
 
     stereo_engine = StereoProcessorHSM(
-        calibrations[1], calibrations[2], min_disparity=0, max_disparity=800, rescale_factor=1.0
+        calibrations[1], calibrations[2], min_disparity=340, max_disparity=960, rescale_factor=1.0
     )
 
     # "\\storage.powerplant.pfr.co.nz\input\projects\dhs\smartsensingandimaging\development\fops\2022-07-21\2\Lucid_213500023\img00015_exp1000_2022-07-21_16-17-37-220.png"
@@ -350,6 +374,12 @@ if __name__ == "__main__":
     sourceRight = cv2.imread(str(Path(
         r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2/Lucid_213500031/img00015_exp1000_2022-07-21_16-17-38-830.png"
     ).resolve()), cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
+    # sourceLeft = cv2.imread(str(Path(
+    #     r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/stereo/Lucid_213500023/img00014_exp1000_2022-07-21_16-17-31-265.png"
+    # ).resolve()), cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
+    # sourceRight = cv2.imread(str(Path(
+    #     r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/stereo/Lucid_213500031/img00014_exp1000_2022-07-21_16-17-32-860.png"
+    # ).resolve()), cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
 
     image_left = cv2.cvtColor(sourceLeft, cv2.COLOR_BayerRG2RGB)
     image_right = cv2.cvtColor(sourceRight, cv2.COLOR_BayerRG2RGB)
@@ -368,14 +398,33 @@ if __name__ == "__main__":
         cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "left_remapped.png"), left_remapped)
         cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "right_remapped.png"), right_remapped)
 
+    #
+    # TEMP CODE
+    # left_remapped = cv2.normalize(left_remapped, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    # right_remapped = cv2.normalize(right_remapped, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+
     disparity_raw = stereo_engine.calculate_disparity(left_remapped, right_remapped)
-    disparity_normalised = StereoProcessor.normalise_disparity_16b(disparity_raw)
+
+    tx = -380  # px
+    ty = 0  # px
+    translation_matrix = np.float32([[1,0,tx], [0,1,ty]])
+    num_rows, num_cols = disparity_raw.shape[:2]
+    img_translation = cv2.warpAffine(disparity_raw, translation_matrix, (num_cols, num_rows))
+
+    # disparity_shifted =  stereo_engine.shift_disp_down(disparity_raw)
+    # Shift back to within 0-255 range (min - max disp needs to be < 254)
+    # disparity_false = disparity_raw - 511
+    # disparity_false[disparity_false < 0] = 0
+    # disparity_false_8b = disparity_false.astype(np.uint8)
+    # disparity_raw_thresh = cv2.threshold(disparity_raw, thresh=400, maxval=0,  type=cv2.THRESH_TOZERO)[1]
+    # disparity_raw_thresh = cv2.threshold(disparity_raw_thresh, thresh=1000, maxval=0, type=cv2.THRESH_TOZERO_INV)[1]
+    disparity_normalised = StereoProcessor.normalise_disparity_16b(img_translation)
     if _DEBUG_OUTPUT_FILES:
-        cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "disp.png"), disparity_normalised)
+        cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "disp-shifty.png"), disparity_normalised)
 
     # clipping_mask = np.logical_or(disparity_raw <= 500, disparity_raw >= 100)
-    xyz = stereo_engine.disparity_to_pointcloud(disparity_raw, left_remapped, 500, 800)
-    xyz.to_file(str(_DEBUG_OUTPUT_PATH / "disp-clipped-moved.ply"))
+    # xyz = stereo_engine.disparity_to_pointcloud(disparity_raw, left_remapped, 500, 800)
+    # xyz.to_file(str(_DEBUG_OUTPUT_PATH / "disp-clipped-moved.ply"))
 
 
     raise NotImplementedError()

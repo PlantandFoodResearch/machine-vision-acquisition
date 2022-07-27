@@ -5,6 +5,8 @@ import datetime
 import cv2
 import logging
 import re
+import numpy as np
+import multiprocessing
 from torch.multiprocessing import Pool, set_start_method, Lock
 from machine_vision_acquisition_python.calibration.stereo import StereoProcessorHSM
 from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters
@@ -109,7 +111,9 @@ def init_child(lock_):
     is_flag=True,
     default=False,
 )
+@click.pass_context
 def stereo(
+    ctx: click.Context,
     calibio_json_path: Path,
     input_path: Path,
     serial_left: str,
@@ -122,6 +126,8 @@ def stereo(
     """
     process stereo scan images and output dispparity maps and/or pointclouds
     """
+
+    nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -178,16 +184,15 @@ def stereo(
     stereo = StereoProcessorHSM(
         calibration_left=calib_left,
         calibration_right=calib_right,
-        min_disparity=0,
+        min_disparity=340,
         max_disparity=disparity_max,
         rescale_factor=1.0,
-        clean=-1
     )
 
     # Multiproc init
     cuda_lock = Lock()
     # Todo use nproc
-    pool = Pool(processes=4, initializer=init_child, initargs=(cuda_lock,))
+    pool = Pool(processes=nproc, initializer=init_child, initargs=(cuda_lock,))
 
     indexes = []
     for left_file_path in input_dir_left.rglob("*.png"):
@@ -239,9 +244,21 @@ def process_file(left_path: Path, right_path: Path, out_path: Path, stereo: Ster
         image_left = cvt_tonemap_image(image_left)
         image_right = cvt_tonemap_image(image_right)
 
+    image_left, image_right = stereo.remap(image_left, image_right)
     with lock:
         disp = stereo.calculate_disparity(image_left, image_right)
-    disp_visual = stereo.normalise_disparity_16b(disp)
+
+    # TEMP
+    # Create fake-disp for viewing
+    disparity_shifted =  stereo.shift_disp_down(disp)
+    disp_visual = stereo.normalise_disparity_8b(disparity_shifted)
+    # move to align roughly with original image.
+    # NOTE: the value of ~380px is experimentally determined. A proper remap inversion should be done
+    tx = -380  # px
+    ty = 0  # px
+    translation_matrix = np.float32([[1,0,tx], [0,1,ty]])  # type: ignore
+    num_rows, num_cols = disp_visual.shape[:2]
+    disp_visual = cv2.warpAffine(disp_visual, translation_matrix, (num_cols, num_rows))
 
     if not cv2.imwrite(str(out_path), disp_visual):
         raise IOError(f"Could not save to {out_path}")
