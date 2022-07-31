@@ -3,7 +3,7 @@ version: '3.6'
 services:
   aravis:
     # Ensures when container crashes or host reboots, it should start up.
-    restart: always
+    restart: unless-stopped
     network_mode: "host"  # Allows direct GigE access and X11 forwarding
     privileged: true # All USB devices, even when hotplugged
     environment:
@@ -24,7 +24,7 @@ services:
 
   # This only makes sense if you can locate the Chronoptics SDK
   multi-sdk:
-    restart: always
+    restart: unless-stopped
     network_mode: "host"
     environment:
       - DISPLAY
@@ -37,6 +37,34 @@ services:
     volumes:
       - ${SRC_DIR:-.}:/src
       - ${OUTPUT_DIR:-/media/powerplant-sink/}:/output/
+  ros-dev:
+    restart: unless-stopped
+    network_mode: "host"  # Allows direct GigE access and X11 forwarding
+    privileged: true # All USB devices, even when hotplugged
+    environment:
+    # These allow x11 forwarding if whomever starts the container has them set
+      - DISPLAY
+      - LIBGL_ALWAYS_INDIRECT
+      - TZ="Pacific/Auckland"
+    # image: althack/ros2:humble-dev  # https://github.com/athackst/dockerfiles/tree/main/ros2
+    build:
+      dockerfile: humble.Dockerfile
+      context: ./docker/ros
+      target: dev
+    # This ensures the current directory is installed in editable mode.
+    # entrypoint: /bin/bash
+    command: [ "sleep", "infinity"]
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+    # Using variables here allows them to be over-ridden, but have sane defaults
+      - ${SRC_DIR:-.}:/src
+      - ros_workspace:/ros_workspace
+      - ${OUTPUT_DIR:-/media/powerplant-sink/}:/output/
+      - "/dev/bus/usb:/dev/bus/usb"  # All USB devices, even when hotplugged
 
 volumes:
   output:
+  ros_workspace:

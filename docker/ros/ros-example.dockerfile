@@ -1,4 +1,5 @@
 ARG DISTRO=jammy
+ARG ROS_DISTRO=humble
 
 FROM ubuntu:${DISTRO} as ros-base
 ARG DEBIAN_FRONTEND=noninteractive
@@ -34,6 +35,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
+ARG ROS_DISTRO
 RUN add-apt-repository universe \
     && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
@@ -41,8 +43,13 @@ RUN add-apt-repository universe \
     && apt-get upgrade --quiet --yes \
     && apt-get install --yes --quiet --no-install-recommends \
         build-essential \
-        ros-humble-ros-base \
+        git \
+        gdb \ 
+        gdbserver \
+        usbutils \
+        ros-${ROS_DISTRO}-ros-core \
         python3-rosdep \
+        python3-argcomplete \
         python3-colcon-common-extensions
 
 RUN wget -q -O /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py \
@@ -52,3 +59,6 @@ RUN wget -q -O /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py \
 
 RUN rosdep init \
     && su ${USERNAME} bash -l -c "rosdep update"
+
+WORKDIR /ros_workspace
+USER ${USERNAME}
