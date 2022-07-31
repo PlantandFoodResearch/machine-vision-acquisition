@@ -4,8 +4,8 @@
     {
       "serial" : "15122686",
       "params": [
-        {"name": "AcquisitionMode", "value": "SingleFrame"},
-        {"name": "AcquisitionFrameRateEnabled", "value": false, "val_type": "bool"},
+        {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "AcquisitionFrameRateEnabled", "value": true, "val_type": "bool"},
         {"name": "AcquisitionFrameRateAuto", "value": "Off"},
         {"name": "AcquisitionFrameRate", "value": 1.0},
         {"name": "TriggerSource", "value" : "Software"},
@@ -17,29 +17,31 @@
     {
       "serial" : "17581532",
       "params": [
-        {"name": "AcquisitionMode", "value": "SingleFrame"},
+        {"name": "AcquisitionMode", "value": "Continuous"},
         {"name": "TriggerMode", "value" : "On"},
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
         {"name": "LineSelector", "value" : "Line3"},
-        {"name": "LineMode", "value" : "Input"}
+        {"name": "LineMode", "value" : "Input"},
+        {"name": "TriggerOverlap", "value": "ReadOut"}
       ]
     },
     {
       "serial" : "17581531",
       "params": [
-        {"name": "AcquisitionMode", "value": "SingleFrame"},
+        {"name": "AcquisitionMode", "value": "Continuous"},
         {"name": "TriggerMode", "value" : "On"},
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
         {"name": "LineSelector", "value" : "Line3"},
-        {"name": "LineMode", "value" : "Input"}
+        {"name": "LineMode", "value" : "Input"},
+        {"name": "TriggerOverlap", "value": "ReadOut"}
       ]
     },
     {
       "serial" : "17581572",
       "params": [
-        {"name": "AcquisitionMode", "value": "SingleFrame"},
+        {"name": "AcquisitionMode", "value": "Continuous"},
         {"name": "TriggerMode", "value" : "On"},
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
@@ -51,7 +53,7 @@
   "shared_params": [
     {"name": "ExposureAuto", "value": "Off"},
     {"name": "GainAuto", "value": "Off"},
-    {"name": "ExposureTime", "value": 12500},
-    {"name": "Gain", "value": 30.0}
+    {"name": "ExposureTime", "value": 1000},
+    {"name": "Gain", "value": 0.0}
   ]
 }
