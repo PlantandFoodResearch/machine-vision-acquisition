@@ -17,8 +17,8 @@
     {"name": "ExposureAuto", "value": "Off"},
     {"name": "GainAuto", "value": "Off"},
     {"name": "ExposureTime", "value": 1000},
-    {"name": "Gain", "value": 0, "val_type": "int"}
+    {"name": "Gain", "value": 0.0},
     {"name": "AcquisitionFrameRateEnable", "value": true, "val_type": "bool"},
-    {"name": "AcquisitionFrameRate", "value": 5.0}
+    {"name": "AcquisitionFrameRate", "value": 1.0}
   ]
 }
