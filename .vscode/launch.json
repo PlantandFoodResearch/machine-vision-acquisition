@@ -46,7 +46,7 @@
             "args": [
                 "convert",
                 "--input",
-                "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/stats",
+                "/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/end-to-end/Lucid_213500023",
             ],
             "justMyCode": true
         },
