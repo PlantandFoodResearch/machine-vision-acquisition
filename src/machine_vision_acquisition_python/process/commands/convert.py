@@ -109,6 +109,8 @@ def process_file(in_path: Path, out_dir: Path, tonemap: bool):
     out_path = out_dir / f"{in_path.stem}{tonemap_path}{in_path.suffix}"
     log.debug(f"Processing {in_path} to {out_path}")
     image = cv2.imread(str(in_path), cv2.IMREAD_ANYDEPTH)
+    if image is None or not image.any():
+        raise ValueError(f"Failed to read {in_path}")
     image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
     if tonemap:
         image = cvt_tonemap_image(image)

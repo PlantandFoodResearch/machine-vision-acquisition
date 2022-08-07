@@ -101,6 +101,8 @@ def process_file_stats(in_path: Path):
     """
     log.debug(f"Processing {in_path}")
     image = cv2.imread(str(in_path), cv2.IMREAD_ANYDEPTH)
+    if image is None or not image.any():
+        raise ValueError(f"Failed to read {in_path}")
     sharpness = get_image_sharpness(image)
     max = get_image_max(image)
     mean = get_image_mean(image)

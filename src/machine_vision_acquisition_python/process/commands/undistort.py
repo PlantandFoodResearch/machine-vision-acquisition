@@ -111,7 +111,9 @@ def undistort(
     undistorter = Undistorter(calibration)
     for file_path in input_path.rglob("*.png"):
         if not undistorter.initialised:
-            image = cv2.imread(str(file_path))
+            image = cv2.imread(str(file_path), cv2.IMREAD_ANYDEPTH)
+            if image is None or not image.any():
+                raise ValueError(f"Failed to read {file_path}")
             undistorter.init_optimal_matrix(image.shape)
         out_dir = (output_path / file_path.parent.relative_to(input_path)).resolve()
         out_dir.mkdir(exist_ok=True, parents=True)
@@ -132,7 +134,9 @@ def undistort(
 
 def process_file(in_path: Path, out_dir: Path, undistorter: Undistorter):
     """Undistort single file for multiprocessing"""
-    image = cv2.imread(str(in_path))
+    image = cv2.imread(str(in_path), cv2.IMREAD_ANYDEPTH)
+    if image is None or not image.any():
+        raise ValueError(f"Failed to read {in_path}")
     if not undistorter.initialised:
         undistorter.init_optimal_matrix(image.shape)
     undistored = undistorter.undistort(image)
