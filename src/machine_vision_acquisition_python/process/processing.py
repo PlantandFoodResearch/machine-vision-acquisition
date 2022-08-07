@@ -36,6 +36,7 @@ def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:
     image_f32 = image.astype(np.float32)
     tonemap = cv2.createTonemapReinhard()
     image_f32_tonemap = tonemap.process(image_f32)
+    # Todo: address https://github.com/opencv/opencv/issues/16739
     image_uint8 = np.uint8(
         np.clip(image_f32_tonemap * 255, 0, 255)
     )  # clip back to uint8
