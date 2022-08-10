@@ -62,7 +62,7 @@ def disable_ptp_sync(cameras: typing.List[CameraHelper]):
     """Disable PtpEnable for all cameras in a list"""
     for camera in cameras:
         device: Aravis.Device = camera.camera.get_device()
-        device.set_boolean_feature_value("PtpEnable", True)
+        device.set_boolean_feature_value("PtpEnable", False)
 
 
 def get_image_sharpness(image: cv2.Mat, size=60):
