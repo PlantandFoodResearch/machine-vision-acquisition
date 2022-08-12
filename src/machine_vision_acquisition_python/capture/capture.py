@@ -120,8 +120,10 @@ def save_current_frame(
     if image is None or image_time is None:
         log.warning(f"cannot save image for {camera.name}, none cached")
         return
+    log.debug(f"pre debayer max: {image.max()}")
     if debayer:
         image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
+        log.debug(f"post debayer max: {image.max()}")
     if tonemap:
         image = cvt_tonemap_image(image)
     # Will result in  YYYY-MM-DDTHH-mm-ss-[ms*3] e.g. 2022-06-20T00-22-44-209
@@ -149,7 +151,8 @@ def save_current_frame(
 def save_all_images_cb(cameras: List[CameraHelper], root_dir: Path):
     # Trigger all
     for camera in cameras:
-        camera.camera.software_trigger()
+        if camera.camera.is_software_trigger_supported() and camera.camera.get_trigger_source() == "Software":
+            camera.camera.software_trigger()
     # Cache the worker pool
     if getattr(save_all_images_cb, "executor", None) is None:
         save_all_images_cb.executor = ThreadPoolExecutor(max_workers=len(cameras))

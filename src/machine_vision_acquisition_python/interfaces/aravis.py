@@ -252,6 +252,8 @@ class CameraHelper:
                     fps_counter = 0
                     fps_start = time.perf_counter()
                     log.debug(f"improc thread ({self.name}) FPS: {fps}")
+            except Exception as exc:
+                log.exception(f"failed to process buffer, ignoring...")
             finally:
                 self.stream.push_buffer(buffer)  # type: ignore
         log.info(f"Stopping image processing thread for {self.name}")
