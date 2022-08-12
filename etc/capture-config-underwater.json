@@ -1,0 +1,32 @@
+{
+  "version": "1",
+  "cameras": [
+    {
+      "serial" : "20201067",
+      "params": [
+        {"name": "AcquisitionMode", "value": "SingleFrame"},
+        {"name": "TriggerSource", "value" : "Software"},
+        {"name": "LineSelector", "value" : "Line1"},
+        {"name": "LineMode", "value" : "Output"},
+        {"name": "LineSource", "value" : "ExposureActive"},
+        {"name": "V3_3Enable", "value" : true, "val_type": "bool"}
+      ]
+    },
+    {
+      "serial" : "20201055",
+      "params": [
+        {"name": "AcquisitionMode", "value": "SingleFrame"},
+        {"name": "TriggerMode", "value" : "On"},
+        {"name": "LineSelector", "value" : "Line3"},
+        {"name": "LineMode", "value" : "Input"},
+        {"name": "TriggerSource", "value" : "Line3"},
+        {"name": "TriggerActivation", "value" : "RisingEdge"}
+      ]
+    }
+  ],
+  "shared_params": [
+    {"name": "ExposureAuto", "value": "Continuous"},
+    {"name": "GainAuto", "value": "Off"},
+    {"name": "Gain", "value": 0.0}
+  ]
+}
