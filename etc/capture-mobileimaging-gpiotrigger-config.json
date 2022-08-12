@@ -54,6 +54,11 @@
     {"name": "ExposureAuto", "value": "Off"},
     {"name": "GainAuto", "value": "Off"},
     {"name": "ExposureTime", "value": 1000},
-    {"name": "Gain", "value": 0.0}
+    {"name": "Gain", "value": 0.0},
+    {"name": "BalanceWhiteAuto", "value": "Off"},
+    {"name": "BalanceRatioSelector", "value": "Red"},
+    {"name": "BalanceRatio", "value": 1.5},
+    {"name": "BalanceRatioSelector", "value": "Blue"},
+    {"name": "BalanceRatio", "value": 2.7}
   ]
 }
