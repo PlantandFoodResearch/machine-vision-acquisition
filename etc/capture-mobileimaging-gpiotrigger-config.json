@@ -46,7 +46,8 @@
         {"name": "TriggerSource", "value" : "Line3"},
         {"name": "TriggerActivation", "value" : "RisingEdge"},
         {"name": "LineSelector", "value" : "Line3"},
-        {"name": "LineMode", "value" : "Input"}
+        {"name": "LineMode", "value" : "Input"},
+        {"name": "TriggerOverlap", "value": "ReadOut"}
       ]
     }
   ],
@@ -57,8 +58,8 @@
     {"name": "Gain", "value": 0.0},
     {"name": "BalanceWhiteAuto", "value": "Off"},
     {"name": "BalanceRatioSelector", "value": "Red"},
-    {"name": "BalanceRatio", "value": 1.5},
+    {"name": "BalanceRatio", "value": 1.1},
     {"name": "BalanceRatioSelector", "value": "Blue"},
-    {"name": "BalanceRatio", "value": 2.7}
+    {"name": "BalanceRatio", "value": 2.25}
   ]
 }
