@@ -2,31 +2,34 @@
   "version": "1",
   "cameras": [
     {
-      "serial" : "20201067",
+      "serial" : "20201055",
       "params": [
-        {"name": "AcquisitionMode", "value": "SingleFrame"},
+        {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "TriggerMode", "value" : "Off"},
         {"name": "TriggerSource", "value" : "Software"},
         {"name": "LineSelector", "value" : "Line1"},
         {"name": "LineMode", "value" : "Output"},
         {"name": "LineSource", "value" : "ExposureActive"},
+        {"name": "LineSelector", "value" : "Line2"},
         {"name": "V3_3Enable", "value" : true, "val_type": "bool"}
       ]
     },
     {
-      "serial" : "20201055",
+      "serial" : "20201067",
       "params": [
-        {"name": "AcquisitionMode", "value": "SingleFrame"},
-        {"name": "TriggerMode", "value" : "On"},
-        {"name": "LineSelector", "value" : "Line3"},
+        {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "LineSelector", "value" : "Line0"},
         {"name": "LineMode", "value" : "Input"},
-        {"name": "TriggerSource", "value" : "Line3"},
-        {"name": "TriggerActivation", "value" : "RisingEdge"}
+        {"name": "TriggerSource", "value" : "Line0"},
+        {"name": "TriggerOverlap", "value" : "ReadOut"},
+        {"name": "TriggerMode", "value" : "On"}
       ]
     }
   ],
   "shared_params": [
-    {"name": "ExposureAuto", "value": "Continuous"},
+    {"name": "ExposureAuto", "value": "Off"},
     {"name": "GainAuto", "value": "Off"},
-    {"name": "Gain", "value": 0.0}
+    {"name": "Gain", "value": 0.0},
+    {"name": "ExposureTime", "value": 100000}
   ]
 }

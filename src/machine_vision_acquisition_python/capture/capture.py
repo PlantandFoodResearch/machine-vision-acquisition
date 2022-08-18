@@ -152,7 +152,10 @@ def save_all_images_cb(cameras: List[CameraHelper], root_dir: Path):
     # Trigger all
     for camera in cameras:
         if camera.camera.is_software_trigger_supported() and camera.camera.get_trigger_source() == "Software":
-            camera.camera.software_trigger()
+            try:
+                camera.camera.software_trigger()
+            except Exception as _:
+                log.exception("Failed to software trigger, ignoring...")
     # Cache the worker pool
     if getattr(save_all_images_cb, "executor", None) is None:
         save_all_images_cb.executor = ThreadPoolExecutor(max_workers=len(cameras))
@@ -195,7 +198,10 @@ def main(config: Config, webviewer):
     # Start software triggered
     for camera in soft_trigger_cameras:
         camera.start_capturing()
-        camera.camera.software_trigger()
+        try:
+            camera.camera.software_trigger()
+        except Exception as exc:
+            log.exception("Failed to trigger, ignoring...")
     time.sleep(0.5)
     # Start external triggered
     for camera in external_trigger_cameras:
