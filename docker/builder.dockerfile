@@ -1,6 +1,6 @@
 # bullseye==11
 ARG DISTRO=bullseye
-ARG ARAVIS_URL=https://github.com/AravisProject/aravis/releases/download/0.8.21/aravis-0.8.21.tar.xz
+ARG ARAVIS_URL=https://github.com/AravisProject/aravis/releases/download/0.8.22/aravis-0.8.22.tar.xz
 ARG CHRONOPTICS_URL=https://storage.powerplant.pfr.co.nz/workspace/software_cache/chronoptic/3.0.1-January2022/tof-linux-x86_64.tar.gz
 
 
