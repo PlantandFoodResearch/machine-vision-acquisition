@@ -14,9 +14,9 @@
   ],
   "shared_params": [
     {"name": "AcquisitionMode", "value": "Continuous"},
-    {"name": "ExposureAuto", "value": "Off"},
+    {"name": "ExposureAuto", "value": "Continuous"},
     {"name": "GainAuto", "value": "Off"},
-    {"name": "ExposureTime", "value": 1000},
+    {"name": "ExposureTime", "value": 50000},
     {"name": "Gain", "value": 0.0},
     {"name": "AcquisitionFrameRateEnable", "value": true, "val_type": "bool"},
     {"name": "AcquisitionFrameRate", "value": 1.0}

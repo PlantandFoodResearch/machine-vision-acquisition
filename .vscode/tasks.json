@@ -1,0 +1,26 @@
+{
+    "tasks": [
+        {
+            "label": "Data Capture - Head 1/A",
+            "command": "mva_capture",
+            "args": [
+                "--config",
+                "${workspaceFolder}/etc/capture-config-head1.json",
+                "--webviewer"
+            ],
+            "problemMatcher": [],
+            "detail": "CMake template test task"
+        },
+        {
+            "label": "Data Capture - Head 2/B",
+            "command": "mva_capture",
+            "args": [
+                "--config",
+                "${workspaceFolder}/etc/capture-config-head2.json",
+                "--webviewer"
+            ],
+            "problemMatcher": [],
+            "detail": "CMake template test task"
+        }
+    ]
+}

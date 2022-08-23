@@ -74,7 +74,7 @@
             "module": "machine_vision_acquisition_python.capture.cli",
             "args": [
                 "--config",
-                "${workspaceFolder}/etc/capture-config.json"
+                "${workspaceFolder}/etc/capture-config-head1.json"
             ],
             "justMyCode": true
         },
