@@ -220,7 +220,18 @@ class CameraHelper:
         with self.lock:
             self._frame_counter_reset_time_s = time.perf_counter()
             self._frame_counter = 0
-        self.camera.start_acquisition()
+        for i in range(5):
+            try:
+                self.camera.start_acquisition()
+                break
+            except Exception as _:
+                log.warning(f"Failed to start acquistion for {self.short_name}")
+                time.sleep(1)
+                continue
+        else:
+            raise ValueError("Could not start acquisition")
+
+
         # try:
         #     self.camera.software_trigger()
         # except Exception as _:
