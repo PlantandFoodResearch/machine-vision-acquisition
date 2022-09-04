@@ -172,22 +172,21 @@ LABEL Description="Debian Aravis + Chronoptics SDK development container"
 # Download and chronoptics SDK
 ARG CHRONOPTICS_URL
 ARG TARGETPLATFORM
+ENV CHRONOPTICS_ROOT="/opt/src/chronoptics"
 USER root
 RUN export ARCHITECTURE="$(arch)" \
     && echo "ARCHITECTURE: $ARCHITECTURE\nTARGETPLATFORM: $TARGETPLATFORM" \
     && if [ $ARCHITECTURE != "x86_64" ]; then \
         echo "$ARCHITECTURE not supported" && exit 127; \
     fi \
-    && mkdir -p /opt/src \
-    && mkdir -p /opt/src/chronoptics \
-    && wget --no-check-certificate -qO - ${CHRONOPTICS_URL} | tar -xz -C /opt/src/chronoptics \
+    && mkdir -p ${CHRONOPTICS_ROOT} \
+    && wget --no-check-certificate -qO - ${CHRONOPTICS_URL} | tar -xz -C ${CHRONOPTICS_ROOT} \
     # Install library load paths
     && touch /etc/ld.so.conf.d/Chronoptics.conf \
-    && echo /opt/src/chronoptics/lib >> /etc/ld.so.conf.d/Chronoptics.conf \
+    && echo ${CHRONOPTICS_ROOT}/lib >> /etc/ld.so.conf.d/Chronoptics.conf \
     && ldconfig
-ENV CHRONOPTICS_ROOT="/opt/src/chronoptics"
-ENV PYTHONPATH "${PYTHONPATH}:/opt/src/chronoptics/lib/python"
-ENV PATH "${PATH}:/opt/src/chronoptics/bin"
+ENV PYTHONPATH="${PYTHONPATH}:${CHRONOPTICS_ROOT}/lib/python"
+ENV PATH="${PATH}:${CHRONOPTICS_ROOT}/bin"
 
 WORKDIR /src
 USER vscode
