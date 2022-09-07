@@ -1,10 +1,10 @@
 # File sync server setup
 A basic lsyncd setup to move files to a server
 
-## Resuming an interuppted upload
-If an upload is interrupted (e.g. machine reboot), it won't be continued. Since only *new* files are uploaded, you need to manually sync *all* files. This can be done by removing the `init      = false,` line from `/etc/lsyncd/lsyncd.conf.lua` (the installed config) and restarting the service. E.g. `sudoedit /etc/lsyncd/lsyncd.conf.lua` followd by `sudo systemctl restart lsyncd.service`
+## Resuming an interrupted upload
+If an upload is interrupted (e.g. machine reboot), it won't be continued. Since only *new* files are uploaded, you need to manually sync *all* files. This can be done by removing the `init      = false,` line from `/etc/lsyncd/lsyncd.conf.lua` (the installed config) and restarting the service. E.g. `sudoedit /etc/lsyncd/lsyncd.conf.lua` followed by `sudo systemctl restart lsyncd.service`
 
-**Warning:** This will potentially take a long time and upload files removed from Powerplant but not from the sync folder. Consider first clearning the sync folder.
+**Warning:** This will potentially take a long time and upload files removed from Powerplant but not from the sync folder. Consider first clearing out the sync folder.
 
 ## Notes on getting lsyncd working
 https://www.howtoforge.com/how-to-synchronize-directories-using-lsyncd-on-ubuntu/
