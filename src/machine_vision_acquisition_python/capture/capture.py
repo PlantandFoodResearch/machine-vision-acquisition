@@ -31,7 +31,7 @@ from flask.wrappers import Response
 import os
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 
 @click.command()
