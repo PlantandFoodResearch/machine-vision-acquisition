@@ -3,8 +3,8 @@ import typing
 import logging
 import time
 import cv2
+from pathlib import Path
 import numpy as np
-
 log = logging.getLogger(__name__)
 try:
     import gi
@@ -15,10 +15,35 @@ except ImportError as _:
     log.warning(
         f"Could not import Aravis, calling some functions will cause exceptions."
     )
+
+try:
+    import fpnge
+    _USE_FPNGE = True
+except ImportError as _:
+    log.warning("python-fpnge not found: Using slow cv2.imwrite for saving PNG files")
+    _USE_FPNGE = False
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from machine_vision_acquisition_python.viewer.cli import CameraHelper
+    from machine_vision_acquisition_python.interfaces.aravis import CameraHelper
+
+
+def save_png(path: Path, image: cv2.Mat, mkdir: bool = False) -> None:
+    """Helper to attempt to use much faster fpnge, otherwise fallback to cv2"""
+    if path.suffix.lower() != ".png":
+        raise ValueError(f"File path must be a *.png")
+    if mkdir:
+        path.parent.mkdir(parents=True, exist_ok=True)  # Optionally always mkdir
+    if _USE_FPNGE:
+        image_bytes = fpnge.fromMat(image)
+        if path.write_bytes(image_bytes) != len(image_bytes):
+            raise IOError(f"Failed to write to {path}")
+        return
+    else:
+        if not cv2.imwrite(str(path), image):
+            raise IOError(f"Failed to write to {path}")
+        return
 
 
 def check_ptp_sync(cameras: typing.List[CameraHelper]):

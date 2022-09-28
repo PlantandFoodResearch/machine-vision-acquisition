@@ -1,32 +1,29 @@
 from typing import Optional, Tuple
+from numpy.typing import NDArray
 import numpy as np
 import numpy.typing as npt
 from pathlib import Path
 import cv2
 
+import cv2
+import numpy as np
+from numpy.typing import NDArray
+from machine_vision_acquisition_python.calibration.libcalib import Calibration
 
-class Calibration:
-    def __init__(self, name_or_serial, cameraMatrix, distCoeffs, rvec, tvec) -> None:
-        self.serial = name_or_serial
-        self.cameraMatrix = cameraMatrix
-        self.distCoeffs = distCoeffs
-        self.rvec = rvec
-        self.tvec = tvec
 
-    def write_opencv_yaml(self, filepath: Path):
-        """Writes out these calibration values in the opencv YAML format"""
-        fs = cv2.FileStorage(str(filepath), cv2.FILE_STORAGE_APPEND | cv2.FILE_STORAGE_FORMAT_YAML)
-        try:
-            fs.write(f"M-{self.serial}", self.cameraMatrix)
-            fs.write(f"D-{self.serial}", self.distCoeffs)
-            fs.write(f"R-{self.serial}", self.rvec)
-            fs.write(f"T-{self.serial}", self.tvec)
-        finally:
-            fs.release()
+def write_opencv_yaml(self, filepath: Path):
+    """Writes out these calibration values in the opencv YAML format"""
+    fs = cv2.FileStorage(str(filepath), cv2.FILE_STORAGE_APPEND | cv2.FILE_STORAGE_FORMAT_YAML)
+    try:
+        fs.write(f"M-{self.serial}", self.cameraMatrix)
+        fs.write(f"D-{self.serial}", self.distCoeffs)
+        fs.write(f"R-{self.serial}", self.rvec)
+        fs.write(f"T-{self.serial}", self.tvec)
+    finally:
+        fs.release()
 
-    def read_opencv_yaml(self, filepath: Path):
-        raise NotImplementedError()
-
+def read_opencv_yaml(self, filepath: Path):
+    raise NotImplementedError()
 
 
 class Undistorter:

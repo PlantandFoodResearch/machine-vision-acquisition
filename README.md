@@ -12,6 +12,8 @@ poetry install
 python3 -m venv .venv # Ensure this is > python3.8
 . .venv/bin/activate
 pip install -e .
+# If you plan to use stereo aspects:
+pip install -e .[stereo]
 ```
 
 ## Docker Environments
@@ -121,10 +123,17 @@ Commands:
   convert    Batch converts raw 12bit 'PNG' images to de-bayered 12bit...
   stats      Generate basic numerical stats from folders of images...
   undistort  Rectify images using CalibIO and OpenCV from a single camera.
+  stereo     (Experimental) Process left/right image pairs to produce disparity based outputs.
 ```
 **Note**: This is fairly functional without Aravis and so can run outside of Docker/Aravis
 
 **Note**: `convert` can also tonemap 12b images to 8b.
+
+#### Examples
+```bash
+#Stereo:
+mva_process stereo --input /mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2 --serial-left=213500023 --serial-right=213500031 --calibio-json /mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/calibration-images/caloutput.json --output ./tmp/stereo/2022-07-21/disp340-960-16bout/2/ --disparity-max 960
+```
 
 ### Systemd service to restart DHCP and NMCLI connections
 To mitigate issues with the devices not being stable, a quick helper service was created.
@@ -156,4 +165,16 @@ Follow the `udev` advice here: https://aravisproject.github.io/aravis/usb.html
 You currently must manually install FPNGE:
 ```bash
 pip install https://github.com/animetosho/python-fpnge/tarball/master
+```
+
+### HSM Stereo:
+The original repo is not PIP-installable :(
+```
+A fork has been created with some fixes and pip installable
+pip install git+https://github.com/nznobody/high-res-stereo
+# download the model
+
+wget http://www.contrib.andrew.cmu.edu/~gengshay/wordpress/wp-content/uploads/2020/01/final-768px.tar -O ./tmp/middlebury-final-768px.tar
+
+export HSM_MODEL_PATH=$(readlink -f ./tmp/middlebury-final-768px.tar)
 ```
