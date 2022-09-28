@@ -12,6 +12,8 @@ poetry install
 python3 -m venv .venv # Ensure this is > python3.8
 . .venv/bin/activate
 pip install -e .
+# If you plan to use stereo aspects:
+pip install -e .[stereo]
 ```
 
 ## Docker Environments
