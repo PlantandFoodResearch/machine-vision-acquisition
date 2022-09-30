@@ -226,15 +226,24 @@ def stereo(
         out_file_path = (output_path / left_file_path.name).resolve()
         re_match = re.search(r"img(\d*?)_(.*?)_(.*?)_(.*?).png$", str(left_file_path.name))
         if re_match is None or re_match.group(1) is None:
-            log.warning(f"Skipping {left_file_path}, could not find image ID")
-            continue
+            # TODO: this is a quick fix because it is 16:50 on a friday. Be better!
+            # We should also support images from MVA capute, which have a different format. Ideally this should be refactored to support any reasonable format.
+            # Maybe a regex as an input with named matched groups as an output? Who knows.
+            re_match = re.search(r"(\d*?)-(.*?).png$", str(left_file_path.name))
+            if re_match is None or re_match.group(1) is None:
+                log.warning(f"Skipping {left_file_path}, could not find image ID")
+                continue
+            # Otherwise we found a match!
+            right_file_glob = f"{re_match.group(1)}-*.png"
+        else:
+            right_file_glob = f"img{re_match.group(1)}_{re_match.group(2)}_{re_match.group(3)}_*.png"
         index = int(re_match.group(1), base=10)
         if index in indexes:
             raise IndexError(f"Image with index {index} already encountered! This can be resolved, but isn't yet implemented")
         indexes.append(index)
         # match on entire string time values
         # Todo: better would be to confirm xy from JSON files
-        right_file_glob = f"img{re_match.group(1)}_{re_match.group(2)}_{re_match.group(3)}_*.png"
+
         right_files = list(input_dir_right.rglob(right_file_glob))
         if len(right_files) != 1:
             raise FileNotFoundError(f"Could not find matching right image for left {left_file_path}")
@@ -265,11 +274,11 @@ def process_file(left_path: Path, right_path: Path, out_path: Path, stereo: Ster
         raise ValueError(f"Could not read left ({left_path}) & right ({right_path}) images.")
 
     # Prepare image
-    image_left = cv2.cvtColor(image_left, cv2.COLOR_BayerRG2RGB)
-    image_right = cv2.cvtColor(image_right, cv2.COLOR_BayerRG2RGB)
-    if tonemap:
-        image_left = cvt_tonemap_image(image_left)
-        image_right = cvt_tonemap_image(image_right)
+    # image_left = cv2.cvtColor(image_left, cv2.COLOR_BayerRG2RGB)
+    # image_right = cv2.cvtColor(image_right, cv2.COLOR_BayerRG2RGB)
+    # if tonemap:
+    #     image_left = cvt_tonemap_image(image_left)
+    #     image_right = cvt_tonemap_image(image_right)
 
     image_left, image_right = stereo.remap(image_left, image_right)
     with lock:
@@ -283,13 +292,15 @@ def process_file(left_path: Path, right_path: Path, out_path: Path, stereo: Ster
     # NOTE: the value of ~340 is experimentally determined. A proper remap inversion should be done
     # Alternative: -291
     # Possibly: https://stackoverflow.com/questions/41703210/inverting-a-real-valued-index-grid
-    tx = -340  # px
-    ty = 0  # px
-    translation_matrix = np.float32([[1,0,tx], [0,1,ty]])  # type: ignore
-    num_rows, num_cols = disp_visual.shape[:2]
-    disp_visual = cv2.warpAffine(disp_visual, translation_matrix, (num_cols, num_rows))
+    # tx = -340  # px
+    # ty = 0  # px
+    # translation_matrix = np.float32([[1,0,tx], [0,1,ty]])  # type: ignore
+    # num_rows, num_cols = disp_visual.shape[:2]
+    # disp_visual = cv2.warpAffine(disp_visual, translation_matrix, (num_cols, num_rows))
 
     if not cv2.imwrite(str(out_path), disp_visual):
         raise IOError(f"Could not save to {out_path}")
+
+    # save_png(out_path, disp_visual, True)
 
     log.debug(f"stereo processed {left_path.name}")

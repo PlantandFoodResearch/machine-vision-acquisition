@@ -11,10 +11,14 @@ import cv2
 import os
 import logging
 from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters, Calibration
-from pyntcloud import PyntCloud
 import pandas as pd
 
 log = logging.getLogger(__name__)
+
+try:
+    from pyntcloud import PyntCloud
+except ImportError as _:
+    log.warning("Could not import optional dependency pyntcloud, some functions might cause exceptions")
 
 _DEBUG_OUTPUT_FILES = True
 _DEBUG_OUTPUT_PATH = (Path.cwd() / "tmp" / "debug").resolve()
@@ -176,7 +180,7 @@ class StereoProcessor:
         disparity_false[disparity_false < 0] = 0
         return disparity_false
 
-    def disparity_to_pointcloud(self, disparity: cv2.Mat, left_remapped: cv2.Mat, min_disp: Optional[int] = None, max_disp: Optional[int] = None) -> PyntCloud:
+    def disparity_to_pointcloud(self, disparity: cv2.Mat, left_remapped: cv2.Mat, min_disp: Optional[int] = None, max_disp: Optional[int] = None) -> "PyntCloud":
         """Convert raw disparity output to coloured pointcloud"""
         log.warning(f"This code is experimental at best!")
         if min_disp is not None and max_disp:
