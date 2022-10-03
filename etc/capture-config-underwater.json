@@ -5,6 +5,9 @@
       "serial" : "20201055",
       "params": [
         {"name": "AcquisitionMode", "value": "Continuous"},
+        {"name": "AcquisitionFrameRateEnable", "value" : true, "val_type": "bool"},
+        {"name": "AcquisitionFrameRate", "value": 1.0},
+        {"name": "TriggerSource", "value" : "Software"},
         {"name": "TriggerMode", "value" : "Off"},
         {"name": "TriggerSource", "value" : "Software"},
         {"name": "LineSelector", "value" : "Line1"},
@@ -30,6 +33,6 @@
     {"name": "ExposureAuto", "value": "Off"},
     {"name": "GainAuto", "value": "Off"},
     {"name": "Gain", "value": 0.0},
-    {"name": "ExposureTime", "value": 100000}
+    {"name": "ExposureTime", "value": 6000}
   ]
 }
