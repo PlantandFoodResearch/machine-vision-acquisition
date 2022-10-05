@@ -23,7 +23,7 @@ opencv-python-headless = "^4.6.0"
 high-res-stereo = {git = "https://github.com/nznobody/high-res-stereo", optional = true}
 
 [tool.poetry.extras]
-stereo = ["torch", "torchvision", "high-res-stereo"]
+stereo = ["torch", "torchvision", "high-res-stereo", "pyntcloud"]
 
 [tool.poetry.dev-dependencies]
 black = {version = "^22.3.0"}
