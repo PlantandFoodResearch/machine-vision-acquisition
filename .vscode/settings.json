@@ -1,4 +1,5 @@
 {
+    "python.linting.pylintArgs": ["--generate-members"], // Helps cv2 work
     "python.formatting.provider": "black",
     "files.associations": {
         "*.toml": "ini",
@@ -51,7 +52,6 @@
     "python.analysis.extraPaths": [
         "/home/user/workspace/cfnmxl/high-res-stereo"
     ],
-    "cmake.sourceDirectory": "${workspaceFolder}/examples",
     "json.schemas": [
         {
             "fileMatch": [
