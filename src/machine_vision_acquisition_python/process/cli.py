@@ -13,26 +13,28 @@ from machine_vision_acquisition_python.utils import (
     get_image_std,
     get_image_max,
 )
-from machine_vision_acquisition_python.process.commands.stats import stats
-from machine_vision_acquisition_python.process.commands.convert import convert
-from machine_vision_acquisition_python.process.commands.undistort import undistort
-from machine_vision_acquisition_python.process.commands.stereo import stereo
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
+
+from machine_vision_acquisition_python.process.commands.stats import stats
+from machine_vision_acquisition_python.process.commands.convert import convert
+from machine_vision_acquisition_python.process.commands.undistort import undistort
+
+try:
+    from machine_vision_acquisition_python.process.commands.stereo import stereo
+except ModuleNotFoundError as _:
+    # has optional dependencies, let is fail
+    log.warning("mva_process stereo won't be available, imports failed.")
+    stereo = None
+
+_commands = [x for x in [stats, convert, undistort, stereo] if x]
 
 _DEFAULT_NPROC = multiprocessing.cpu_count()
 
 
 # Add each sub-command here :)
-@click.group(
-    commands=[
-        stats,
-        convert,
-        undistort,
-        stereo,
-    ]
-)
+@click.group(commands=_commands)
 @click.option("--debug", is_flag=True)
 @click.option(
     "--nproc",

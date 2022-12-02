@@ -3,21 +3,30 @@ from typing import Optional, Tuple, Any
 from cv2 import CALIB_ZERO_DISPARITY
 import numpy as np
 from numpy.typing import NDArray
-import torch
-import high_res_stereo.utils.model
-import high_res_stereo.utils.inference
-from torch.autograd import Variable
 import cv2
 import os
 import logging
-from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters, Calibration
+from machine_vision_acquisition_python.calibration.libcalib import (
+    read_calib_parameters,
+    Calibration,
+)
 import pandas as pd
+
 log = logging.getLogger(__name__)
 try:
     from pyntcloud import PyntCloud
 except ImportError as _:
     log.warning("Failed to import pyntcloud, some functions may fail")
-
+try:
+    import torch
+    import high_res_stereo.utils.model
+    import high_res_stereo.utils.inference
+    from torch.autograd import Variable
+except ImportError as _:
+    log.warning(
+        "Failed to import torch and/or high_res_stereo, some functions may fail"
+    )
+    _HAS_HSM = False
 
 
 _DEBUG_OUTPUT_FILES = True
@@ -121,16 +130,14 @@ class StereoProcessor:
             cv2.CV_16SC2,
         )
 
-
     def apply_roi_to_disparity(self, disparity: cv2.Mat) -> cv2.Mat:
         masked_image = np.zeros(disparity.shape, disparity.dtype)
         roi = self.params.validROI1
         if roi is None or len(roi) != 4:
             raise ValueError("Invalid")
         x, y, w, h = roi
-        masked_image[y:y+h,x:x+w] = disparity[y:y+h,x:x+w]
+        masked_image[y : y + h, x : x + w] = disparity[y : y + h, x : x + w]
         return masked_image
-
 
     def remap(self, left: cv2.Mat, right: cv2.Mat) -> Tuple[cv2.Mat, cv2.Mat]:
         return cv2.remap(
@@ -145,27 +152,27 @@ class StereoProcessor:
     def normalise_disparity_16b(disparity: cv2.Mat) -> cv2.Mat:
         """Given the processed disparity image (with invalid pixels set to np.inf), return a normalised 16b disparity map"""
         # Normalise
-        invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
+        invalid = np.logical_or(disparity == np.inf, disparity != disparity)
         new_max_value = np.iinfo(np.uint16).max
         old_max = disparity[~invalid].max()
         if old_max <= 0:
             log.debug("clipping old max < 0 to 1")
             old_max = 1.0
         log.debug(f"normalising disparity max from {old_max} to {new_max_value}")
-        disp_16b = (disparity/old_max*new_max_value).astype(np.uint16)  # type: ignore
+        disp_16b = (disparity / old_max * new_max_value).astype(np.uint16)  # type: ignore
         return disp_16b
 
     @staticmethod
     def normalise_disparity_8b(disparity: cv2.Mat) -> cv2.Mat:
         """Given the processed disparity image (with invalid pixels set to np.inf), return a normalised 8b disparity map"""
-        invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
+        invalid = np.logical_or(disparity == np.inf, disparity != disparity)
         new_max_value = np.iinfo(np.uint8).max
         old_max = disparity[~invalid].max()
         if old_max <= 0:
             log.debug("clipping old max < 0 to 1")
             old_max = 1.0
         log.debug(f"normalising disparity max from {old_max} to {new_max_value}")
-        disp_8b = (disparity/old_max*new_max_value).astype(np.uint8)  # type: ignore
+        disp_8b = (disparity / old_max * new_max_value).astype(np.uint8)  # type: ignore
         return disp_8b
 
     @staticmethod
@@ -175,12 +182,18 @@ class StereoProcessor:
         if disparity.max() <= 0:
             # nothing to do here, raise error?
             return disparity
-        non_zero_min = disparity[disparity!=0].min()
+        non_zero_min = disparity[disparity != 0].min()
         disparity_false = disparity - (non_zero_min + 1)
         disparity_false[disparity_false < 0] = 0
         return disparity_false
 
-    def disparity_to_pointcloud(self, disparity: cv2.Mat, left_remapped: cv2.Mat, min_disp: Optional[int] = None, max_disp: Optional[int] = None) -> "PyntCloud":
+    def disparity_to_pointcloud(
+        self,
+        disparity: cv2.Mat,
+        left_remapped: cv2.Mat,
+        min_disp: Optional[int] = None,
+        max_disp: Optional[int] = None,
+    ) -> "PyntCloud":
         """Convert raw disparity output to coloured pointcloud"""
         log.warning(f"This code is experimental at best!")
         if min_disp is not None and max_disp:
@@ -188,38 +201,35 @@ class StereoProcessor:
             disparity = mask.data
         xyz = cv2.reprojectImageTo3D(disparity, self.params.Q, True)
         points3D = np.reshape(xyz, (self.image_size[0] * self.image_size[1], 3))
-        colours = np.reshape(left_remapped, (self.image_size[0] * self.image_size[1], 3))
+        colours = np.reshape(
+            left_remapped, (self.image_size[0] * self.image_size[1], 3)
+        )
 
-        data = np.concatenate([points3D, colours], axis=1)  # Combines xyz and BGR (in that order)
+        data = np.concatenate(
+            [points3D, colours], axis=1
+        )  # Combines xyz and BGR (in that order)
 
         # Clip outputs to Z values between 0.2 and 2.0
-        idx = np.logical_and(
-            data[:,2]<2.0,
-            data[:,2]>0.2
-            )
+        idx = np.logical_and(data[:, 2] < 2.0, data[:, 2] > 0.2)
         data = data[idx]  # Only keep indicies that matched logical_and
         # PyntCloud epxects a Pandas DF. Explicitly name columns
-        data_pd = pd.DataFrame.from_records(data, columns=[
-            "x",
-            "y",
-            "z",
-            "blue",
-            "green",
-            "red"
-        ])
+        data_pd = pd.DataFrame.from_records(
+            data, columns=["x", "y", "z", "blue", "green", "red"]
+        )
         # the merging will have converted the colour channels to floats. Revert them to uchar
         data_pd = data_pd.astype(
             {
-            "x": np.float32,
-            "y": np.float32,
-            "z": np.float32,
-            "blue": np.uint8,
-            "green": np.uint8,
-            "red": np.uint8
+                "x": np.float32,
+                "y": np.float32,
+                "z": np.float32,
+                "blue": np.uint8,
+                "green": np.uint8,
+                "red": np.uint8,
             }
         )
         cloud = PyntCloud(data_pd)
         return cloud
+
 
 class StereoProcessorHSM(StereoProcessor):
     def __init__(
@@ -230,15 +240,20 @@ class StereoProcessorHSM(StereoProcessor):
         max_disparity=256,
         rescale_factor=1.0,
         clean=-1,
-        hsm_model_path: Optional[Path] = None
+        hsm_model_path: Optional[Path] = None,
     ) -> None:
         super().__init__(calibration_left, calibration_right)
         hsm_model_path_env = os.environ.get("HSM_MODEL_PATH", None)
-        if hsm_model_path_env is not None and Path(hsm_model_path_env).resolve().exists():
+        if (
+            hsm_model_path_env is not None
+            and Path(hsm_model_path_env).resolve().exists()
+        ):
             hsm_model_path = Path(hsm_model_path_env).resolve()
             log.debug(f"StereoProcessorHSM using model: {hsm_model_path}")
         if hsm_model_path is None:
-            raise ValueError("StereoProcessorHSM must be provided with a trained model either via 'hsm_model_path' or ENV 'HSM_MODEL_PATH'")
+            raise ValueError(
+                "StereoProcessorHSM must be provided with a trained model either via 'hsm_model_path' or ENV 'HSM_MODEL_PATH'"
+            )
         if not hsm_model_path.exists():
             raise FileNotFoundError(
                 f"Could not locate HSM pre-trained model: {{hsm_model_path}}"
@@ -257,7 +272,9 @@ class StereoProcessorHSM(StereoProcessor):
                 f"min_disparity and max_disparity must give a multiple of 16! got: {self.num_disparities}"
             )
         if clean != -1:
-            log.warning(f"Values for clean of anything other than -1 are not understood")
+            log.warning(
+                f"Values for clean of anything other than -1 are not understood"
+            )
         self.clean = clean
 
         self.model, _, _ = high_res_stereo.utils.model.load_model(
@@ -272,27 +289,45 @@ class StereoProcessorHSM(StereoProcessor):
         self.module = self.model.module
 
     def calculate_disparity(self, left_remapped: cv2.Mat, right_remapped: cv2.Mat):
-        imgL, imgR, img_size_in, img_size_in_scaled, img_size_net_in = high_res_stereo.utils.inference.prepare_image_pair(left_remapped, right_remapped, self.rescale_factor)
+        (
+            imgL,
+            imgR,
+            img_size_in,
+            img_size_in_scaled,
+            img_size_net_in,
+        ) = high_res_stereo.utils.inference.prepare_image_pair(
+            left_remapped, right_remapped, self.rescale_factor
+        )
         # Load to GPU
         imgL = Variable(torch.FloatTensor(imgL).cuda())
         imgR = Variable(torch.FloatTensor(imgR).cuda())
-        disparity, entropy, _ = high_res_stereo.utils.inference.perform_inference(self.model, imgL, imgR, True)
+        disparity, entropy, _ = high_res_stereo.utils.inference.perform_inference(
+            self.model, imgL, imgR, True
+        )
         disparity = torch.squeeze(disparity).data.cpu().numpy()
         entropy = torch.squeeze(entropy).data.cpu().numpy()
         torch.cuda.empty_cache()
-        top_pad   = img_size_net_in[0]-img_size_in_scaled[0]
-        left_pad  = img_size_net_in[1]-img_size_in_scaled[1]
-        disparity = disparity[top_pad:,:disparity.shape[1]-left_pad]
-        entropy = entropy[top_pad:,:disparity.shape[1]-left_pad]
+        top_pad = img_size_net_in[0] - img_size_in_scaled[0]
+        left_pad = img_size_net_in[1] - img_size_in_scaled[1]
+        disparity = disparity[top_pad:, : disparity.shape[1] - left_pad]
+        entropy = entropy[top_pad:, : disparity.shape[1] - left_pad]
         # resize to highres
         if self.rescale_factor != 1.0:
-            disparity = cv2.resize(disparity/self.rescale_factor,(img_size_in[1],img_size_in[0]),interpolation=cv2.INTER_LINEAR)
+            disparity = cv2.resize(
+                disparity / self.rescale_factor,
+                (img_size_in[1], img_size_in[0]),
+                interpolation=cv2.INTER_LINEAR,
+            )
 
         # clip to min/max disp values requested
-        disparity = cv2.threshold(disparity, thresh=self.min_disp, maxval=0,  type=cv2.THRESH_TOZERO)[1]
-        disparity = cv2.threshold(disparity, thresh=self.max_disp, maxval=0, type=cv2.THRESH_TOZERO_INV)[1]
+        disparity = cv2.threshold(
+            disparity, thresh=self.min_disp, maxval=0, type=cv2.THRESH_TOZERO
+        )[1]
+        disparity = cv2.threshold(
+            disparity, thresh=self.max_disp, maxval=0, type=cv2.THRESH_TOZERO_INV
+        )[1]
         # clip while keep inf
-        invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
+        invalid = np.logical_or(disparity == np.inf, disparity != disparity)
         disparity[invalid] = np.inf
 
         # clip to ROI
@@ -332,11 +367,15 @@ class StereoProcessorOpenCVBM(StereoProcessor):
         left_remapped_gray = cv2.cvtColor(left_remapped, cv2.COLOR_BGR2GRAY)
         right_remapped_gray = cv2.cvtColor(right_remapped, cv2.COLOR_BGR2GRAY)
         if _DEBUG_OUTPUT_FILES:
-            cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "left_remapped_gray.png"), left_remapped_gray)
-            cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "right_remapped_gray.png"), right_remapped_gray)
+            cv2.imwrite(
+                str(_DEBUG_OUTPUT_PATH / "left_remapped_gray.png"), left_remapped_gray
+            )
+            cv2.imwrite(
+                str(_DEBUG_OUTPUT_PATH / "right_remapped_gray.png"), right_remapped_gray
+            )
         disparity: cv2.Mat = self.bm.compute(left_remapped_gray, right_remapped_gray)
-        invalid = np.logical_or(disparity == np.inf,disparity!=disparity)
-        disparity[invalid] = np.inf
+        invalid = np.logical_or(disparity == np.inf, disparity != disparity)
+        disparity[invalid] = 0 if disparity.dtype == np.int16 else np.inf
         # clip to ROI
         disparity = self.apply_roi_to_disparity(disparity)
         return disparity
@@ -366,17 +405,31 @@ if __name__ == "__main__":
     # )
 
     stereo_engine = StereoProcessorHSM(
-        calibrations[1], calibrations[2], min_disparity=340, max_disparity=960, rescale_factor=1.0,
+        calibrations[1],
+        calibrations[2],
+        min_disparity=340,
+        max_disparity=960,
+        rescale_factor=1.0,
         # hsm_model_path=Path(r"/home/user/workspace/cfnmxl/high-res-stereo/pretrained-models/middlebury-final-768px.tar")
     )
 
     # "\\storage.powerplant.pfr.co.nz\input\projects\dhs\smartsensingandimaging\development\fops\2022-07-21\2\Lucid_213500023\img00015_exp1000_2022-07-21_16-17-37-220.png"
-    sourceLeft = cv2.imread(str(Path(
-        r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2/Lucid_213500023/img00015_exp1000_2022-07-21_16-17-37-220.png"
-    ).resolve()), cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
-    sourceRight = cv2.imread(str(Path(
-        r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2/Lucid_213500031/img00015_exp1000_2022-07-21_16-17-38-830.png"
-    ).resolve()), cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
+    sourceLeft = cv2.imread(
+        str(
+            Path(
+                r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2/Lucid_213500023/img00015_exp1000_2022-07-21_16-17-37-220.png"
+            ).resolve()
+        ),
+        cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR,
+    )
+    sourceRight = cv2.imread(
+        str(
+            Path(
+                r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-07-21/2/Lucid_213500031/img00015_exp1000_2022-07-21_16-17-38-830.png"
+            ).resolve()
+        ),
+        cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR,
+    )
     # sourceLeft = cv2.imread(str(Path(
     #     r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/tmp/stereo/Lucid_213500023/img00014_exp1000_2022-07-21_16-17-31-265.png"
     # ).resolve()), cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
@@ -387,6 +440,7 @@ if __name__ == "__main__":
     image_left = cv2.cvtColor(sourceLeft, cv2.COLOR_BayerRG2RGB)
     image_right = cv2.cvtColor(sourceRight, cv2.COLOR_BayerRG2RGB)
     from machine_vision_acquisition_python.process.processing import cvt_tonemap_image
+
     image_left = cvt_tonemap_image(image_left)
     image_right = cvt_tonemap_image(image_right)
     # sourceRight = cv2.imread(
@@ -396,7 +450,9 @@ if __name__ == "__main__":
     #     "tmp/testset/Lucid_213500031/img00000_exp1000_2022-04-29_16-24-10-294.tonemapped.png"
     # )
 
-    left_remapped, right_remapped = stereo_engine.remap(image_left, image_right)  # Rectify
+    left_remapped, right_remapped = stereo_engine.remap(
+        image_left, image_right
+    )  # Rectify
     if _DEBUG_OUTPUT_FILES:
         cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "left_remapped.png"), left_remapped)
         cv2.imwrite(str(_DEBUG_OUTPUT_PATH / "right_remapped.png"), right_remapped)
@@ -410,9 +466,11 @@ if __name__ == "__main__":
 
     tx = -340  # px
     ty = 0  # px
-    translation_matrix = np.float32([[1,0,tx], [0,1,ty]])  # type: ignore
+    translation_matrix = np.float32([[1, 0, tx], [0, 1, ty]])  # type: ignore
     num_rows, num_cols = disparity_raw.shape[:2]
-    img_translation = cv2.warpAffine(disparity_raw, translation_matrix, (num_cols, num_rows))
+    img_translation = cv2.warpAffine(
+        disparity_raw, translation_matrix, (num_cols, num_rows)
+    )
 
     # disparity_shifted =  stereo_engine.shift_disp_down(disparity_raw)
     # Shift back to within 0-255 range (min - max disp needs to be < 254)
@@ -428,7 +486,6 @@ if __name__ == "__main__":
     # clipping_mask = np.logical_or(disparity_raw <= 500, disparity_raw >= 100)
     # xyz = stereo_engine.disparity_to_pointcloud(disparity_raw, left_remapped, 500, 800)
     # xyz.to_file(str(_DEBUG_OUTPUT_PATH / "disp-clipped-moved.ply"))
-
 
     raise NotImplementedError()
     # https://answers.opencv.org/question/89968/how-to-derive-relative-r-and-t-from-camera-extrinsics/
