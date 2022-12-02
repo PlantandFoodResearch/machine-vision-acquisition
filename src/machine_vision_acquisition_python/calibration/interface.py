@@ -70,8 +70,8 @@ def save_to_mva_json(calibs: List[Calibration], out_path: Path):
             },
             "camera_matrix": calib.cameraMatrix.tolist(),
             "dist_coefs": calib.distCoeffs.tolist(),
-            "R": calib.rvec.tolist(),
-            "T": calib.tvec.tolist(),
+            "r_vec": calib.rvec.tolist(),
+            "t_vec": calib.tvec.tolist(),
         }
         output_objs.append(dict_calib)
     out_path.write_text(json.dumps(output_objs))
