@@ -8,7 +8,7 @@ from machine_vision_acquisition_python.calibration.shared import Calibration
 log = logging.getLogger(__name__)
 
 
-def load_from_mva_json(json_path: Path):
+def load_from_mva_json(json_path: Path) -> List[Calibration]:
     """
     Loads calibrations from an internal JSON style format.
     
