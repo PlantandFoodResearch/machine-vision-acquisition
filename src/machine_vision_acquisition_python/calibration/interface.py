@@ -18,7 +18,6 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
     content = json.loads(json_path.read_text())
     calibs = []
     for calibration in content:
-        log.info(f"loading...")
         name = calibration["name"]
         width = calibration["image_size"]["width"]
         height = calibration["image_size"]["height"]
