@@ -109,4 +109,6 @@ def read_camera_extrinsics(transform: dict):
     t = transform["translation"]
     tvec = [t["x"], t["y"], t["z"]]
     tvec = np.matrix(tvec)
+    # Convert tvec from meters to mm
+    tvec = tvec * 1000
     return rvec, tvec
