@@ -27,7 +27,7 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
         translation = calibration["t_vec"]
 
         # marshal types
-        camera_matrix = np.array(camera_matrix, dtype=np.float64)
+        camera_matrix = np.matrix(camera_matrix, dtype=np.float64)
         dist_coefs = np.array(dist_coefs, dtype=np.float64)
         rotation = np.array(rotation, dtype=np.float64)
         translation = np.array(translation, dtype=np.float64)
