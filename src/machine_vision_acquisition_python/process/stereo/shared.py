@@ -160,8 +160,8 @@ class StereoProcessor:
         Uses knowledge of camera calibration to project left hand disparity to depth in mm.
         Source: https://docs.opencv.org/4.x/dd/d53/tutorial_py_depthmap.html
         """
-        focallength_px = self.calibration_left.cameraMatrix[0][0]
-        doffs = self.calibration_right.cameraMatrix[0][2] - self.calibration_left.cameraMatrix[0][2]
+        focallength_px = self.calibration_left.cameraMatrix[0, 0]
+        doffs = self.calibration_right.cameraMatrix[0, 2] - self.calibration_left.cameraMatrix[0, 2]
         baseline_mm = np.linalg.norm(self.T)
         return baseline_mm * focallength_px / (disparity_value + doffs)
 
