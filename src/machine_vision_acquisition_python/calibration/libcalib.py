@@ -12,7 +12,7 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
-def read_calib_parameters(calibio_json: Path) -> List[Calibration]:
+def load_from_calibio_json(calibio_json: Path) -> List[Calibration]:
     """
     Reads the calibio JSON file output and returns all camera calibrations contained.
 

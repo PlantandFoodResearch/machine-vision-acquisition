@@ -9,7 +9,7 @@ import numpy as np
 import multiprocessing
 from torch.multiprocessing import Pool, set_start_method, Lock
 from machine_vision_acquisition_python.calibration.stereo import StereoProcessorHSM
-from machine_vision_acquisition_python.calibration.libcalib import read_calib_parameters
+from machine_vision_acquisition_python.calibration.libcalib import load_from_calibio_json
 from machine_vision_acquisition_python.process.commands.convert import cvt_tonemap_image
 from machine_vision_acquisition_python.utils import save_png
 try:
@@ -162,7 +162,7 @@ def stereo(
         log.debug(f"Output path defaulted to: {output_path}")
     output_path.mkdir(exist_ok=True, parents=True)
 
-    calibrations = read_calib_parameters(calibio_json_path)
+    calibrations = load_from_calibio_json(calibio_json_path)
     # Try match calibrations to requested serials
     calib_left = None
     calib_right = None
