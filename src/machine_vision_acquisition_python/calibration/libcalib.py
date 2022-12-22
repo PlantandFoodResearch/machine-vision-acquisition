@@ -34,9 +34,9 @@ def load_from_calibio_json(calibio_json: Path) -> List[Calibration]:
                 continue
             else:
                 if polymorphic_name != "libCalib::CameraModelOpenCV":
-                    log.warning(f"polymorphic_name: {polymorphic_name}")
+                    log.debug(f"polymorphic_name: {polymorphic_name}")
                 if polymorphic_id == 1:
-                    log.warning(
+                    log.debug(
                         f"Using polymorphic_id==1 for camera serial {camera.get('serial', 'unknown')}"
                     )
                 valid_calibs.append(camera)
