@@ -4,8 +4,9 @@ from cv2 import CALIB_ZERO_DISPARITY
 import numpy as np
 from numpy.typing import NDArray
 import cv2
+import cv2.fisheye
 import logging
-from machine_vision_acquisition_python.calibration.shared import Calibration
+from machine_vision_acquisition_python.calibration.shared import Calibration, CameraModel
 log = logging.getLogger(__name__)
 try:
     from pyntcloud import PyntCloud
@@ -25,7 +26,7 @@ class StereoParams:
     validROI1: Optional[Tuple]
     validROI2: Optional[Tuple]
 
-    def __init__(self, R1, R2, P1, P2, Q, validROI1, validROI2) -> None:
+    def __init__(self, R1, R2, P1, P2, Q, validROI1=None, validROI2=None) -> None:
         self.R1 = R1
         self.R2 = R2
         self.P1 = P1
@@ -46,26 +47,17 @@ class StereoProcessor:
         if (
             calibration_left.image_width != calibration_right.image_width
             or calibration_left.image_height != calibration_right.image_height
+            or self.calibration_left.camera_model != self.calibration_right.camera_model
         ):
-            raise ValueError("Camera calibration image sizes don't match")
+            raise ValueError("Camera calibration image sizes or models don't match")
         self.image_size = (
             self.calibration_left.image_width,
             self.calibration_left.image_height,
         )  # (width, height)
+        self.camera_model: CameraModel = self.calibration_left.camera_model
         self.init_stereo_params()
 
-    def init_stereo_params(self):
-        # https://answers.opencv.org/question/89968/how-to-derive-relative-r-and-t-from-camera-extrinsics/
-        # convert rotation vectors for each camera to 3x3 rotation matrices
-        self.r1 = cv2.Rodrigues(self.calibration_left.rvec)
-        self.r2 = cv2.Rodrigues(self.calibration_right.rvec)
-
-        # Ensure that r1 and r2 are relative to each other
-        self.R = np.matmul(np.linalg.inv(self.r1[0]), self.r2[0])
-        self.T = np.matmul(self.r1[0].T, self.calibration_right.tvec.T) - np.matmul(
-            self.r1[0].T, self.calibration_left.tvec.T
-        )
-
+    def init_opencv_model_params(self):
         # Generate stereo params
         self.params = StereoParams(
             *cv2.stereoRectify(
@@ -98,6 +90,56 @@ class StereoProcessor:
             cv2.CV_16SC2,
         )
 
+    def init_opencvfisheye_model_params(self):
+        self.params = StereoParams(
+            *cv2.fisheye.stereoRectify(
+                self.calibration_left.cameraMatrix,
+                self.calibration_left.distCoeffs,
+                self.calibration_right.cameraMatrix,
+                self.calibration_right.distCoeffs,
+                self.image_size,
+                cv2.Rodrigues(self.R)[0],
+                self.T,
+                flags=CALIB_ZERO_DISPARITY,
+            )
+        )
+
+        self.map_left_1, self.map_left_2 = cv2.fisheye.initUndistortRectifyMap(
+            self.calibration_left.cameraMatrix,
+            self.calibration_left.distCoeffs,
+            self.params.R1,
+            self.params.P1,
+            self.image_size,
+            cv2.CV_16SC2,
+        )
+        self.map_right_1, self.map_right_2 = cv2.fisheye.initUndistortRectifyMap(
+            self.calibration_right.cameraMatrix,
+            self.calibration_right.distCoeffs,
+            self.params.R2,
+            self.params.P2,
+            self.image_size,
+            cv2.CV_16SC2,
+        )
+
+    def init_stereo_params(self):
+        # https://answers.opencv.org/question/89968/how-to-derive-relative-r-and-t-from-camera-extrinsics/
+        # convert rotation vectors for each camera to 3x3 rotation matrices
+        self.r1 = cv2.Rodrigues(self.calibration_left.rvec)
+        self.r2 = cv2.Rodrigues(self.calibration_right.rvec)
+
+        # Ensure that r1 and r2 are relative to each other
+        self.R = np.matmul(np.linalg.inv(self.r1[0]), self.r2[0])
+        self.T = np.matmul(self.r1[0].T, self.calibration_right.tvec.T) - np.matmul(
+            self.r1[0].T, self.calibration_left.tvec.T
+        )
+
+        if self.camera_model == CameraModel.OpenCV:
+            self.init_opencv_model_params()
+        elif self.camera_model == CameraModel.OpenCVFisheye:
+            self.init_opencvfisheye_model_params()
+        else:
+            raise NotImplementedError(f"Camera model {self.camera_model} not supported (yet!)")
+
     def apply_roi_to_disparity(self, disparity: cv2.Mat) -> cv2.Mat:
         masked_image = np.zeros(disparity.shape, disparity.dtype)
         roi = self.params.validROI1
@@ -115,6 +157,11 @@ class StereoProcessor:
     def calculate_disparity(self, left_remapped: cv2.Mat, right_remapped: cv2.Mat):
         """From two remapped images, return a single disparity image"""
         raise NotImplementedError()
+
+    @property
+    def baseline_mm(self):
+        """Returns the stereo camera baseline in mm units (the norm of the t_vec)"""
+        return np.linalg.norm(self.T)
 
     @staticmethod
     def normalise_disparity_16b(disparity: cv2.Mat) -> cv2.Mat:
@@ -161,7 +208,8 @@ class StereoProcessor:
         Source: https://docs.opencv.org/4.x/dd/d53/tutorial_py_depthmap.html
         """
         focallength_px = self.calibration_left.cameraMatrix[0, 0]
-        doffs = self.calibration_right.cameraMatrix[0, 2] - self.calibration_left.cameraMatrix[0, 2]
+        # doffs = self.calibration_right.cameraMatrix[0, 2] - self.calibration_left.cameraMatrix[0, 2]
+        doffs = 0  # Because we use stereoRectify with the flag CALIB_ZERO_DISPARITY, image centers should be aligned
         baseline_mm = np.linalg.norm(self.T)
         return baseline_mm * focallength_px / (disparity_value + doffs)
 

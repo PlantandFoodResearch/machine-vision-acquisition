@@ -3,7 +3,7 @@ import logging
 import json
 from typing import List
 import numpy as np
-from machine_vision_acquisition_python.calibration.shared import Calibration
+from machine_vision_acquisition_python.calibration.shared import Calibration, CameraModel
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
         dist_coefs = calibration["dist_coefs"]
         rotation = calibration["r_vec"]
         translation = calibration["t_vec"]
+        camera_model = calibration["camera_model"]
 
         # marshal types
         camera_matrix = np.matrix(camera_matrix, dtype=np.float64)
@@ -33,6 +34,7 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
         translation = np.array(translation, dtype=np.float64)
         width = int(width)
         height = int(height)
+        camera_model = CameraModel(camera_model)
 
         # Always store rotation in rotation vector notation (rx,ry,rz)
         if len(rotation.shape)!=1 and rotation.shape == (3,3):
@@ -49,7 +51,8 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
             rvec=rotation,
             tvec=translation,
             image_height=height,
-            image_width=width
+            image_width=width,
+            camera_model=camera_model
         )
         calibs.append(calib_obj)
     return calibs
@@ -63,6 +66,7 @@ def save_to_mva_json(calibs: List[Calibration], out_path: Path):
     for calib in calibs:
         dict_calib = {
             "name": calib.serial,
+            "camera_model": str(calib.camera_model),
             "image_size" : {
                 "width": calib.image_width,
                 "height": calib.image_height

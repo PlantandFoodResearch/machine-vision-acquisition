@@ -1,13 +1,15 @@
 import cv2
 import numpy as np
-from machine_vision_acquisition_python.calibration.shared import Calibration
+from machine_vision_acquisition_python.calibration.shared import Calibration, CameraModel
 from machine_vision_acquisition_python.process.stereo.shared import StereoParams, StereoProcessor
 from numpy.typing import NDArray
-from typing import Union, List
+from typing import Union, List, Tuple
 
 
 def _marshal_point_to_array(point: Union[NDArray, List]):
     if isinstance(point, list):
+        point = np.array(point).astype(np.float32)
+    if isinstance(point, Tuple):
         point = np.array(point).astype(np.float32)
     return point
 
@@ -26,7 +28,14 @@ class SparseStereoProcessor(StereoProcessor):
 
     def undistort_image_points_l(self, image_points: NDArray) -> NDArray:
         """Return undistorted points for left camera"""
-        undistorted_points = cv2.undistortPoints(
+        if self.camera_model == CameraModel.OpenCV:
+            function_undistort_points = cv2.undistortPoints
+        elif self.camera_model == CameraModel.OpenCVFisheye:
+            function_undistort_points = cv2.fisheye.undistortPoints
+        else:
+            raise NotImplementedError(f"Camera model {self.camera_model} not supported (yet!)")
+
+        undistorted_points = function_undistort_points(
             image_points,
             self.calibration_left.cameraMatrix,
             self.calibration_left.distCoeffs,
@@ -37,7 +46,15 @@ class SparseStereoProcessor(StereoProcessor):
 
     def undistort_image_points_r(self, image_points: NDArray) -> NDArray:
         """Return undistorted points for right camera"""
-        undistorted_points = cv2.undistortPoints(
+
+        if self.camera_model == CameraModel.OpenCV:
+            function_undistort_points = cv2.undistortPoints
+        elif self.camera_model == CameraModel.OpenCVFisheye:
+            function_undistort_points = cv2.fisheye.undistortPoints
+        else:
+            raise NotImplementedError(f"Camera model {self.camera_model} not supported (yet!)")
+
+        undistorted_points = function_undistort_points(
             image_points,
             self.calibration_right.cameraMatrix,
             self.calibration_right.distCoeffs,
@@ -45,10 +62,10 @@ class SparseStereoProcessor(StereoProcessor):
             P=self.params.P2)
         return undistorted_points
 
-
     def disparity_from_dual_points(self, left_point: Union[NDArray, List], right_point: Union[NDArray, List], vertical_tolerance_px=10) -> float:
-        left_points = _marshal_point_to_array(left_point).reshape(1,2).astype(np.float32)
-        right_points = _marshal_point_to_array(right_point).reshape(1,2).astype(np.float32)
+        """Given two points, return the horizontal disparity in pixel units"""
+        left_points = _marshal_point_to_array(left_point).reshape(-1,1,2).astype(np.float32)  # Make a 1xN/Nx1 2-channel CV_32FC2 array
+        right_points = _marshal_point_to_array(right_point).reshape(-1,1,2).astype(np.float32)
         
         # Undistort points
         left_point_undistorted = self.undistort_image_points_l(left_points)[0][0]
