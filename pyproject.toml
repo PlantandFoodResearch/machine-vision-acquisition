@@ -12,7 +12,7 @@ mva_process = 'machine_vision_acquisition_python.process.cli:cli'
 mva_capture = 'machine_vision_acquisition_python.capture.cli:cli'
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 click = "^8.1.2"
 pydantic = "^1.9.1"
 Flask = "^2.1.2"
