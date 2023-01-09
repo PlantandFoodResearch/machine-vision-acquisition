@@ -1,5 +1,5 @@
 # This file contains stereo processing code
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 from cv2 import CALIB_ZERO_DISPARITY
 import numpy as np
 from numpy.typing import NDArray
@@ -217,3 +217,49 @@ class StereoProcessor:
         doffs = 0  # Because we use stereoRectify with the flag CALIB_ZERO_DISPARITY, image centers should be aligned
         baseline_mm = np.linalg.norm(self.T)
         return baseline_mm * focallength_px / (disparity_value + doffs)
+
+
+    def points_px_to_3d_world_space(self, points_px: Union[NDArray, List[Tuple]]):
+        """
+        Converts point(s) in pixel (u,v,w) space to world space (x,y,z) relative to the 'main' camera.
+
+        Input is expected in undistorted pixel units with 'w' being disparity (in pixels) and only from the 'left/main' camera.
+        *Note*: You must undistort the (u,v) values first!
+
+        Ouput will be point(s) in mm units relative to the 'left/main' camera with the following coordinate system:
+        X positive right
+        Y positive down
+        Z positive forwards
+
+        *Note*: negative Y values will mean upwards! This is because it follows the image convention of (0,0) being top left.
+
+        Source: https://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/OWENS/LECT9/node2.html
+        """
+
+        points_ndarray = (
+            _marshal_point_to_array(points_px).reshape(-1, 1, 3).astype(np.float32)
+        )
+        # Shape should be Nx3 not Nx1 by 3-channel
+        points_ndarray = np.squeeze(points_ndarray, axis=1)
+        if points_ndarray.shape[1] != 3:
+            raise ValueError("Points input array must be Nx3 array")
+        result = []
+        # cache camera values locally
+        f_x = self.calibration_left.cameraMatrix[0,0]
+        f_y = self.calibration_left.cameraMatrix[1,1]
+        c_x = self.calibration_left.cameraMatrix[0,2]
+        c_y = self.calibration_left.cameraMatrix[1,2]
+        # TODO: This could probably be made a lot more efficient with matrix multiplication
+        for point in points_ndarray:
+            z = self.disparity_to_depth_mm(point[2])
+            x = (point[0] - c_x) / f_x * z
+            y = (point[1] - c_y) / f_y * z
+            result.append([x, y, z])
+        return np.array(result).astype(np.float32)
+
+def _marshal_point_to_array(point: Union[NDArray, List]):
+    if isinstance(point, list):
+        point = np.array(point).astype(np.float32)
+    if isinstance(point, Tuple):
+        point = np.array(point).astype(np.float32)
+    return point

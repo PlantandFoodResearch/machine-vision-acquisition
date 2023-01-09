@@ -36,3 +36,13 @@ class Calibration:
     def focallength_px(self):
         """Returns the camera's focal length in pixel units"""
         return float(self.cameraMatrix[0, 0])
+
+    def mm_per_px_at_z(self, depth_mm: float) -> float:
+        """
+        Return mm per pixel at a given depth (in mm) using this camera's calibration.
+
+        Based on x_px=(f/Z)*x_mm,
+        with x_px == 1 and Z == depth_plane
+        """
+        f = self.cameraMatrix[0,0]
+        return (depth_mm / f)

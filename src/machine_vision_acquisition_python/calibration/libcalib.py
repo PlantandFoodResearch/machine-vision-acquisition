@@ -107,17 +107,17 @@ def read_camera_intrinsics(intrinsics: dict, model: CameraModel):
         s4 = intrinsics["s4"]["val"]
         tauX = intrinsics["tauX"]["val"]
         tauY = intrinsics["tauY"]["val"]
-        distortion_matrix = np.matrix(
+        distortion_matrix = np.array(
             [k1, k2, p1, p2, k3, k4, k5, k6, s1, s2, s3, s4, tauX, tauY],
             dtype=np.float64,
         )
     elif model == CameraModel.OpenCVFisheye:
-        distortion_matrix = np.matrix([k1, k2, k3, k4], dtype=np.float64)
+        distortion_matrix = np.array([k1, k2, k3, k4], dtype=np.float64)
     else:
         raise NotImplementedError(f"Camera model {model} not supported (yet!)")
 
     tmp = [[f, 0.0, cx], [0.0, f * ar, cy], [0.0, 0.0, 1.0]]
-    cam_matrix = np.matrix(tmp, dtype=np.float64)
+    cam_matrix = np.array(tmp, dtype=np.float64)
     return cam_matrix, distortion_matrix
 
 
@@ -132,11 +132,11 @@ def read_camera_extrinsics(transform: dict):
     ry = q["ry"]
     rz = q["rz"]
 
-    rvec = np.matrix([rx, ry, rz])
+    rvec = np.array([rx, ry, rz])
 
     t = transform["translation"]
     tvec = [t["x"], t["y"], t["z"]]
-    tvec = np.matrix(tvec)
+    tvec = np.array(tvec)
     # Convert tvec from meters to mm
     tvec = tvec * 1000
     return rvec, tvec

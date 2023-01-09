@@ -7,17 +7,10 @@ from machine_vision_acquisition_python.calibration.shared import (
 from machine_vision_acquisition_python.process.stereo.shared import (
     StereoParams,
     StereoProcessor,
+    _marshal_point_to_array
 )
 from numpy.typing import NDArray
 from typing import Union, List, Tuple
-
-
-def _marshal_point_to_array(point: Union[NDArray, List]):
-    if isinstance(point, list):
-        point = np.array(point).astype(np.float32)
-    if isinstance(point, Tuple):
-        point = np.array(point).astype(np.float32)
-    return point
 
 
 class SparseStereoProcessor(StereoProcessor):
