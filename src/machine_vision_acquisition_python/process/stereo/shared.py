@@ -218,7 +218,6 @@ class StereoProcessor:
         baseline_mm = np.linalg.norm(self.T)
         return baseline_mm * focallength_px / (disparity_value + doffs)
 
-
     def points_px_to_3d_world_space(self, points_px: Union[NDArray, List[Tuple]]):
         """
         Converts point(s) in pixel (u,v,w) space to world space (x,y,z) relative to the 'main' camera.
@@ -245,10 +244,10 @@ class StereoProcessor:
             raise ValueError("Points input array must be Nx3 array")
         result = []
         # cache camera values locally
-        f_x = self.calibration_left.cameraMatrix[0,0]
-        f_y = self.calibration_left.cameraMatrix[1,1]
-        c_x = self.calibration_left.cameraMatrix[0,2]
-        c_y = self.calibration_left.cameraMatrix[1,2]
+        f_x = self.calibration_left.cameraMatrix[0, 0]
+        f_y = self.calibration_left.cameraMatrix[1, 1]
+        c_x = self.calibration_left.cameraMatrix[0, 2]
+        c_y = self.calibration_left.cameraMatrix[1, 2]
         # TODO: This could probably be made a lot more efficient with matrix multiplication
         for point in points_ndarray:
             z = self.disparity_to_depth_mm(point[2])
@@ -256,6 +255,7 @@ class StereoProcessor:
             y = (point[1] - c_y) / f_y * z
             result.append([x, y, z])
         return np.array(result).astype(np.float32)
+
 
 def _marshal_point_to_array(point: Union[NDArray, List]):
     if isinstance(point, list):

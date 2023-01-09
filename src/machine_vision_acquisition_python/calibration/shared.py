@@ -44,5 +44,5 @@ class Calibration:
         Based on x_px=(f/Z)*x_mm,
         with x_px == 1 and Z == depth_plane
         """
-        f = self.cameraMatrix[0,0]
-        return (depth_mm / f)
+        f = self.cameraMatrix[0, 0]
+        return depth_mm / f

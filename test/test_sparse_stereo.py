@@ -73,19 +73,24 @@ def test_sparse_stereo_general():
     )  # Manually confirmed value for this calibration and point
 
     # get distance between points in mm not accounting for twist (z differences)
-    left_points = np.array([p1_left, p2_left]).reshape(-1,1,2).astype(np.float32)  # Make a 1xN/Nx1 2-channel CV_32FC2 array
+    left_points = (
+        np.array([p1_left, p2_left]).reshape(-1, 1, 2).astype(np.float32)
+    )  # Make a 1xN/Nx1 2-channel CV_32FC2 array
     left_points_undistorted = stereo.undistort_image_points_l(left_points)
     diff_p1_p2 = np.abs(left_points_undistorted[0] - left_points_undistorted[1])[0]
     diff_p1_p2_mm = calibs[0].mm_per_px_at_z(depth_mm) * diff_p1_p2
     assert 242.8 == pytest.approx(
         diff_p1_p2_mm[0], 0.01
     )  # Manually confirmed value for this calibration and point
-    err_percentage = (p1_p2_mm-diff_p1_p2_mm)[0]/p1_p2_mm[0] * 100  # Only do dx
+    err_percentage = (p1_p2_mm - diff_p1_p2_mm)[0] / p1_p2_mm[0] * 100  # Only do dx
     assert err_percentage < 0.5
 
     # get distance between points in 3d space using point projection
     disp_p2_px = stereo.disparity_from_dual_points(p2_left, p2_right)
-    left_points = [np.append(left_points_undistorted[0], disp_px), np.append(left_points_undistorted[1], disp_p2_px)] # Make a 1xN/Nx1 3-channel array ready for casting
+    left_points = [
+        np.append(left_points_undistorted[0], disp_px),
+        np.append(left_points_undistorted[1], disp_p2_px),
+    ]  # Make a 1xN/Nx1 3-channel array ready for casting
     left_points_3d = stereo.points_px_to_3d_world_space(left_points)
     diff_3d_p1_p2_mm = left_points_3d[0] - left_points_3d[1]
     pass

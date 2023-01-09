@@ -107,7 +107,7 @@ class NumpyEncoder(json.JSONEncoder):
     "index_regex",
     help="Regex to extract image index from name for stereo image matching",
     type=click.types.STRING,
-    default=r"^(\d*?)\D"  # All leading digits until first non-digit
+    default=r"^(\d*?)\D",  # All leading digits until first non-digit
 )
 def calib(
     input_path: Path,
@@ -117,7 +117,7 @@ def calib(
     board_checker_size: float,
     input_stereo_path: Optional[Path],
     singlethread: bool,
-    index_regex: str
+    index_regex: str,
 ):
     """Just another OpenCV Calibration CLI"""
     if singlethread:
@@ -147,11 +147,11 @@ def calib(
     calibration_objs.append(
         {
             "name": input_path.name,
-            "image_size": {"width": expected_shape[1] ,"height": expected_shape[0]},
+            "image_size": {"width": expected_shape[1], "height": expected_shape[0]},
             "camera_matrix": camera_matrix,
             "dist_coefs": dist_coefs,
-            "r_vec": [0,0,0],
-            "t_vec": [0,0,0],
+            "r_vec": [0, 0, 0],
+            "t_vec": [0, 0, 0],
             "_rms": rms,
         }
     )
@@ -186,7 +186,13 @@ def calib(
         )
 
         # Align image_points
-        image_points_aligned, image_points_stereo_aligned =  align_image_points(image_points, image_names, image_points_stereo, image_names_stereo, index_regex)
+        image_points_aligned, image_points_stereo_aligned = align_image_points(
+            image_points,
+            image_names,
+            image_points_stereo,
+            image_names_stereo,
+            index_regex,
+        )
 
         # Perform actual stereo calibration
         (
@@ -212,7 +218,7 @@ def calib(
         calibration_objs.append(
             {
                 "name": input_stereo_path.name,
-                "image_size": {"width": expected_shape[1] ,"height": expected_shape[0]},
+                "image_size": {"width": expected_shape[1], "height": expected_shape[0]},
                 "camera_matrix": camera_matrix_stereo,
                 "dist_coefs": dist_coefs_stereo,
                 "r_vec": rot,
@@ -229,18 +235,24 @@ def calib(
     cv2_calib_path = Path.cwd() / "calibration.yml"
     cv_file = cv2.FileStorage(str(cv2_calib_path), cv2.FILE_STORAGE_WRITE)
     try:
-        cv_file.write('M1', camera_matrix)
-        cv_file.write('D1', dist_coefs)
-        cv_file.write('M2', camera_matrix_stereo)
-        cv_file.write('D2', dist_coefs_stereo)
+        cv_file.write("M1", camera_matrix)
+        cv_file.write("D1", dist_coefs)
+        cv_file.write("M2", camera_matrix_stereo)
+        cv_file.write("D2", dist_coefs_stereo)
         if rot is not None:
-            cv_file.write('R', rot)
-            cv_file.write('T', trans)
+            cv_file.write("R", rot)
+            cv_file.write("T", trans)
     finally:
         cv_file.release()
 
 
-def align_image_points(image_points:List , image_names: List[str], image_points_stereo: List, image_names_stereo: List[str], index_regex:str):
+def align_image_points(
+    image_points: List,
+    image_names: List[str],
+    image_points_stereo: List,
+    image_names_stereo: List[str],
+    index_regex: str,
+):
     """Finds indicies based on image name list (must match order of points list) and re-orders both lists to match"""
     out_image_points = []
     out_image_points_stereo = []
@@ -261,14 +273,12 @@ def align_image_points(image_points:List , image_names: List[str], image_points_
     return out_image_points, out_image_points_stereo
 
 
-
 def get_image_index(image_name: str, index_regex: str):
     matches = re.search(index_regex, image_name)
     if matches is not None:
         return int(matches[1])
     else:
         raise ValueError(f"Could not extract index from {image_name}")
-
 
 
 def get_image_paths_and_size(base_path) -> Tuple[List[Path], Tuple[int, int]]:

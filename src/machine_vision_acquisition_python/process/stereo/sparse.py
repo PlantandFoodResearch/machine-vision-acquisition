@@ -7,7 +7,7 @@ from machine_vision_acquisition_python.calibration.shared import (
 from machine_vision_acquisition_python.process.stereo.shared import (
     StereoParams,
     StereoProcessor,
-    _marshal_point_to_array
+    _marshal_point_to_array,
 )
 from numpy.typing import NDArray
 from typing import Union, List, Tuple
