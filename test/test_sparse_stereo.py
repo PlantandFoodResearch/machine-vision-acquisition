@@ -92,5 +92,7 @@ def test_sparse_stereo_general():
         np.append(left_points_undistorted[1], disp_p2_px),
     ]  # Make a 1xN/Nx1 3-channel array ready for casting
     left_points_3d = stereo.points_px_to_3d_world_space(left_points)
-    diff_3d_p1_p2_mm = left_points_3d[0] - left_points_3d[1]
-    pass
+    diff_3d_p1_p2_mm = left_points_3d[1] - left_points_3d[0]
+    assert np.array([241.31, -12.61, -7.55]) == pytest.approx(
+        diff_3d_p1_p2_mm, 0.01
+    )
