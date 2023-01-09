@@ -5,6 +5,7 @@ import time
 import cv2
 from pathlib import Path
 import numpy as np
+
 log = logging.getLogger(__name__)
 try:
     import gi
@@ -18,6 +19,7 @@ except ImportError as _:
 
 try:
     import fpnge
+
     _USE_FPNGE = True
 except ImportError as _:
     log.warning("python-fpnge not found: Using slow cv2.imwrite for saving PNG files")

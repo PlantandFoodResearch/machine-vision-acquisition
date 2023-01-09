@@ -3,7 +3,10 @@ import logging
 import json
 from typing import List
 import numpy as np
-from machine_vision_acquisition_python.calibration.shared import Calibration, CameraModel
+from machine_vision_acquisition_python.calibration.shared import (
+    Calibration,
+    CameraModel,
+)
 
 log = logging.getLogger(__name__)
 
@@ -11,7 +14,7 @@ log = logging.getLogger(__name__)
 def load_from_mva_json(json_path: Path) -> List[Calibration]:
     """
     Loads calibrations from an internal JSON style format.
-    
+
     This format is basically OpenCV's representation written to a
     structured JSON file that may contain multiple cameras.
     """
@@ -37,13 +40,14 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
         camera_model = CameraModel(camera_model)
 
         # Always store rotation in rotation vector notation (rx,ry,rz)
-        if len(rotation.shape)!=1 and rotation.shape == (3,3):
+        if len(rotation.shape) != 1 and rotation.shape == (3, 3):
             log.debug(f"Converting matrix to rotation vector")
             import cv2
+
             rotation, _ = cv2.Rodrigues(rotation)
             # opencv gives back (3,1) array instead of just (3,)
             rotation = rotation.reshape((3,))
-        
+
         calib_obj = Calibration(
             name_or_serial=name,
             cameraMatrix=camera_matrix,
@@ -52,7 +56,7 @@ def load_from_mva_json(json_path: Path) -> List[Calibration]:
             tvec=translation,
             image_height=height,
             image_width=width,
-            camera_model=camera_model
+            camera_model=camera_model,
         )
         calibs.append(calib_obj)
     return calibs
@@ -67,10 +71,7 @@ def save_to_mva_json(calibs: List[Calibration], out_path: Path):
         dict_calib = {
             "name": calib.serial,
             "camera_model": str(calib.camera_model),
-            "image_size" : {
-                "width": calib.image_width,
-                "height": calib.image_height
-            },
+            "image_size": {"width": calib.image_width, "height": calib.image_height},
             "camera_matrix": calib.cameraMatrix.tolist(),
             "dist_coefs": calib.distCoeffs.tolist(),
             "r_vec": calib.rvec.tolist(),

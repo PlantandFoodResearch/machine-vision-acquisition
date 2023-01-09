@@ -7,7 +7,10 @@ import cv2
 import os
 import logging
 from machine_vision_acquisition_python.calibration.shared import Calibration
-from machine_vision_acquisition_python.process.stereo.shared import StereoProcessor, StereoParams
+from machine_vision_acquisition_python.process.stereo.shared import (
+    StereoProcessor,
+    StereoParams,
+)
 import pandas as pd
 
 log = logging.getLogger(__name__)
@@ -21,10 +24,9 @@ try:
     import high_res_stereo.utils.inference
     from torch.autograd import Variable
 except ImportError as _:
-    log.warning(
-        "Failed to import torch and/or high_res_stereo, HSM functions may fail"
-    )
+    log.warning("Failed to import torch and/or high_res_stereo, HSM functions may fail")
     _HAS_HSM = False
+
 
 class StereoProcessorHSM(StereoProcessor):
     def __init__(
@@ -128,4 +130,3 @@ class StereoProcessorHSM(StereoProcessor):
         # clip to ROI
         disparity = self.apply_roi_to_disparity(disparity)
         return disparity
-

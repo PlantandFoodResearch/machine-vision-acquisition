@@ -6,10 +6,14 @@ from numpy.typing import NDArray
 import cv2
 import logging
 from machine_vision_acquisition_python.calibration.shared import Calibration
-from machine_vision_acquisition_python.process.stereo.shared import StereoProcessor, StereoParams
+from machine_vision_acquisition_python.process.stereo.shared import (
+    StereoProcessor,
+    StereoParams,
+)
 import pandas as pd
 
 log = logging.getLogger(__name__)
+
 
 class StereoProcessorOpenCVBM(StereoProcessor):
     def __init__(
@@ -48,4 +52,3 @@ class StereoProcessorOpenCVBM(StereoProcessor):
         # clip to ROI
         disparity = self.apply_roi_to_disparity(disparity)
         return disparity
-

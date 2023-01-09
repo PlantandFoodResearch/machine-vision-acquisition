@@ -8,7 +8,9 @@ import json
 import pandas as pd
 import multiprocessing
 from machine_vision_acquisition_python.calibration.distortion import Undistorter
-from machine_vision_acquisition_python.calibration.libcalib import load_from_calibio_json
+from machine_vision_acquisition_python.calibration.libcalib import (
+    load_from_calibio_json,
+)
 
 log = logging.getLogger(__name__)
 
@@ -79,7 +81,11 @@ def undistort(
     Rectify images using CalibIO and OpenCV from a single camera.
     """
 
-    nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
+    nproc = (
+        ctx.parent.params.get("nproc", multiprocessing.cpu_count())
+        if ctx.parent
+        else multiprocessing.cpu_count()
+    )
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")

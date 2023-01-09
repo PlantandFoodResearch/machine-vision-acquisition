@@ -13,7 +13,9 @@ from machine_vision_acquisition_python.calibration.libcalib import Calibration
 
 def write_opencv_yaml(self, filepath: Path):
     """Writes out these calibration values in the opencv YAML format"""
-    fs = cv2.FileStorage(str(filepath), cv2.FILE_STORAGE_APPEND | cv2.FILE_STORAGE_FORMAT_YAML)
+    fs = cv2.FileStorage(
+        str(filepath), cv2.FILE_STORAGE_APPEND | cv2.FILE_STORAGE_FORMAT_YAML
+    )
     try:
         fs.write(f"M-{self.serial}", self.cameraMatrix)
         fs.write(f"D-{self.serial}", self.distCoeffs)
@@ -21,6 +23,7 @@ def write_opencv_yaml(self, filepath: Path):
         fs.write(f"T-{self.serial}", self.tvec)
     finally:
         fs.release()
+
 
 def read_opencv_yaml(self, filepath: Path):
     raise NotImplementedError()

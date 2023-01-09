@@ -107,7 +107,11 @@ def set_camera_params(config: Config, cameras: List[CameraHelper]) -> None:
 
 
 def save_current_frame(
-    camera: CameraHelper, out_dir: Optional[Path] = None, debayer: bool = True, tonemap: bool = True, image_index: Optional[int] = None
+    camera: CameraHelper,
+    out_dir: Optional[Path] = None,
+    debayer: bool = True,
+    tonemap: bool = True,
+    image_index: Optional[int] = None,
 ):
     if out_dir is None:
         out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
@@ -131,18 +135,23 @@ def save_current_frame(
         np.datetime_as_string(image_time, unit="ms").replace(":", "-").replace(".", "-")
     )
     # Will give names like: "Grasshopper3-GS3-U3-23S6C-15122686-2022-06-20T00-22-44-209.png"
-    
+
     # Can be overridden to be a simpe index (for calibration)
     img_path = out_dir / f"{camera.short_name}-{pathsafe_time_str}.png"
     if image_index:
-        img_path = out_dir / f"{image_index}-{camera.short_name}-{pathsafe_time_str}.png"
+        img_path = (
+            out_dir / f"{image_index}-{camera.short_name}-{pathsafe_time_str}.png"
+        )
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
         import fpnge
+
         fpnge_bytes = fpnge.fromMat(image)
         img_path.write_bytes(fpnge_bytes)
     except ImportError as _:
-        log.warning(f"Must install python fpnge bindings for faster PNG saving: https://github.com/animetosho/python-fpnge.")
+        log.warning(
+            f"Must install python fpnge bindings for faster PNG saving: https://github.com/animetosho/python-fpnge."
+        )
         if not cv2.imwrite(str(img_path), image):
             raise ValueError("Could not write PNG file")
     log.info(f"{img_path.name} saved")
@@ -151,7 +160,10 @@ def save_current_frame(
 def save_all_images_cb(cameras: List[CameraHelper], root_dir: Path):
     # Trigger all
     for camera in cameras:
-        if camera.camera.is_software_trigger_supported() and camera.camera.get_trigger_source() == "Software":
+        if (
+            camera.camera.is_software_trigger_supported()
+            and camera.camera.get_trigger_source() == "Software"
+        ):
             try:
                 camera.camera.software_trigger()
             except Exception as _:
@@ -162,10 +174,20 @@ def save_all_images_cb(cameras: List[CameraHelper], root_dir: Path):
     exec: ThreadPoolExecutor = save_all_images_cb.executor
     for camera in cameras:
         out_dir = Path.cwd().resolve() / "tmp" / camera.short_name
-        job = functools.partial(save_current_frame, camera, out_dir, debayer=True, tonemap=True, image_index=save_all_images_cb.index)
+        job = functools.partial(
+            save_current_frame,
+            camera,
+            out_dir,
+            debayer=True,
+            tonemap=True,
+            image_index=save_all_images_cb.index,
+        )
         exec.submit(job)
     save_all_images_cb.index += 1
+
+
 save_all_images_cb.index = 1
+
 
 def main(config: Config, webviewer):
     cameras = open_cameras(config)
