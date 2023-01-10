@@ -19,7 +19,7 @@ Flask = "^2.1.2"
 sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"
 openpyxl = "^3.0.10"
-opencv-python-headless = "^4.6.0"
+opencv-python-headless = "^4.5"
 high-res-stereo = {git = "https://github.com/nznobody/high-res-stereo", optional = true}
 
 [tool.poetry.extras]
