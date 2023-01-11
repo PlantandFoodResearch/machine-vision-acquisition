@@ -5,28 +5,17 @@ import json
 import logging
 from pathlib import Path
 from typing import List
-
+from machine_vision_acquisition_python.calibration.shared import (
+    Calibration,
+    CameraModel,
+)
 import numpy as np
-from numpy.typing import NDArray
+
 
 log = logging.getLogger(__name__)
 
 
-TEMP_FILE_PATH = r"/mnt/powerplant/input/projects/dhs/smartsensingandimaging/development/fops/2022-04-29/calibration-images/caloutput.json"
-
-
-class Calibration:
-    def __init__(self, name_or_serial, cameraMatrix, distCoeffs, rvec, tvec, image_width, image_height) -> None:
-        self.serial: str = name_or_serial
-        self.cameraMatrix: NDArray = cameraMatrix
-        self.distCoeffs: NDArray = distCoeffs
-        self.rvec: NDArray = rvec
-        self.tvec: NDArray = tvec
-        self.image_width: int = image_width
-        self.image_height: int = image_height
-
-
-def read_calib_parameters(calibio_json: Path):
+def load_from_calibio_json(calibio_json: Path) -> List[Calibration]:
     """
     Reads the calibio JSON file output and returns all camera calibrations contained.
 
@@ -38,48 +27,65 @@ def read_calib_parameters(calibio_json: Path):
     valid_calibs = []
     for camera in calib["Calibration"]["cameras"]:
         try:
-            polymorphic_name = camera["model"].get("polymorphic_name")
+            polymorphic_name = (
+                camera["model"].get("polymorphic_name") or polymorphic_name
+            )  # preserve previous model if new one is None
             polymorphic_id = camera["model"].get("polymorphic_id")
             # for some reason CalibIO outptus polymorphic_id==1 for 'other' cameras (not the first)
             if polymorphic_name is None and polymorphic_id != 1:
-                log.warning(
+                log.error(
                     f"Skipping invalid camera type, polymorphic_id: {camera['model']['polymorphic_id']}"
                 )
-                continue
+                raise NotImplementedError(
+                    "Cannot support differing camera models in single calibration (yet!)"
+                )
             else:
                 if polymorphic_name != "libCalib::CameraModelOpenCV":
                     log.warning(f"polymorphic_name: {polymorphic_name}")
                 if polymorphic_id == 1:
-                    log.warning(
-                        f"Using polymorphic_id==1 for camera serial {camera.get('serial', 'unknown')}"
+                    log.debug(
+                        f"Using polymorphic_id==1 for camera serial {camera.get('serial', 'unknown')}, this will assume same as initial camera"
                     )
                 valid_calibs.append(camera)
         except:
             log.exception(f"Skipping invalid camera, unknown error")
             continue
-
+    if polymorphic_name is None:
+        raise ValueError("Could not determine camera model")
+    camera_model = CameraModel(polymorphic_name.removeprefix("libCalib::"))
     camera_calibrations: List[Calibration] = []
     camera_count = len(valid_calibs)
     log.debug(f"reading {camera_count} camera calibrations from {calibio_json}")
 
     for camera in valid_calibs:
         intrinsics = camera["model"]["ptr_wrapper"]["data"]["parameters"]
-        cam_matrix, distortion_matrix = read_camera_intrinsics(intrinsics)
+        cam_matrix, distortion_matrix = read_camera_intrinsics(intrinsics, camera_model)
         transform = camera["transform"]
         rvec, tvec = read_camera_extrinsics(transform)
-        image_size = camera["model"]["ptr_wrapper"]["data"]["CameraModelCRT"]["CameraModelBase"]["imageSize"]
-        #TODO add imageSize here
+        image_size = camera["model"]["ptr_wrapper"]["data"]["CameraModelCRT"][
+            "CameraModelBase"
+        ]["imageSize"]
+        # TODO add imageSize here
         # todo: get serial mappings
         serial = camera.get("serial", "unknown")
         if serial == "unknown":
             log.warning(f"calibration does not reference camera serial, is it present?")
-        calib = Calibration(serial, cam_matrix, distortion_matrix, rvec, tvec, image_size["width"], image_size["height"])
+        calib = Calibration(
+            serial,
+            cam_matrix,
+            distortion_matrix,
+            rvec,
+            tvec,
+            image_size["width"],
+            image_size["height"],
+            camera_model,
+        )
         # Use openCV naming
         camera_calibrations.append(calib)
     return camera_calibrations
 
 
-def read_camera_intrinsics(intrinsics: dict):
+def read_camera_intrinsics(intrinsics: dict, model: CameraModel):
     """See https://docs.opencv.org/4.6.0/d9/d0c/group__calib3d.html#ga7dfb72c9cf9780a347fbe3d1c47e5d5a for matrix details"""
     f = intrinsics["f"]["val"]
     ar = intrinsics["ar"]["val"]
@@ -89,21 +95,29 @@ def read_camera_intrinsics(intrinsics: dict):
     k2 = intrinsics["k2"]["val"]
     k3 = intrinsics["k3"]["val"]
     k4 = intrinsics["k4"]["val"]
-    k5 = intrinsics["k5"]["val"]
-    k6 = intrinsics["k6"]["val"]
-    p1 = intrinsics["p1"]["val"]
-    p2 = intrinsics["p2"]["val"]
-    s1 = intrinsics["s1"]["val"]
-    s2 = intrinsics["s2"]["val"]
-    s3 = intrinsics["s3"]["val"]
-    s4 = intrinsics["s4"]["val"]
-    tauX = intrinsics["tauX"]["val"]
-    tauY = intrinsics["tauY"]["val"]
+
+    if model == CameraModel.OpenCV:
+        p1 = intrinsics["p1"]["val"]
+        p2 = intrinsics["p2"]["val"]
+        k5 = intrinsics["k5"]["val"]
+        k6 = intrinsics["k6"]["val"]
+        s1 = intrinsics["s1"]["val"]
+        s2 = intrinsics["s2"]["val"]
+        s3 = intrinsics["s3"]["val"]
+        s4 = intrinsics["s4"]["val"]
+        tauX = intrinsics["tauX"]["val"]
+        tauY = intrinsics["tauY"]["val"]
+        distortion_matrix = np.array(
+            [k1, k2, p1, p2, k3, k4, k5, k6, s1, s2, s3, s4, tauX, tauY],
+            dtype=np.float64,
+        )
+    elif model == CameraModel.OpenCVFisheye:
+        distortion_matrix = np.array([k1, k2, k3, k4], dtype=np.float64)
+    else:
+        raise NotImplementedError(f"Camera model {model} not supported (yet!)")
+
     tmp = [[f, 0.0, cx], [0.0, f * ar, cy], [0.0, 0.0, 1.0]]
-    cam_matrix = np.matrix(tmp, dtype=np.float64)
-    distortion_matrix = np.matrix(
-        [k1, k2, p1, p2, k3, k4, k5, k6, s1, s2, s3, s4, tauX, tauY], dtype=np.float64
-    )
+    cam_matrix = np.array(tmp, dtype=np.float64)
     return cam_matrix, distortion_matrix
 
 
@@ -118,9 +132,11 @@ def read_camera_extrinsics(transform: dict):
     ry = q["ry"]
     rz = q["rz"]
 
-    rvec = np.matrix([rx, ry, rz])
+    rvec = np.array([rx, ry, rz])
 
     t = transform["translation"]
     tvec = [t["x"], t["y"], t["z"]]
-    tvec = np.matrix(tvec)
+    tvec = np.array(tvec)
+    # Convert tvec from meters to mm
+    tvec = tvec * 1000
     return rvec, tvec

@@ -57,7 +57,11 @@ def convert(
     Batch converts raw 12bit 'PNG' images to de-bayered 12bit images. Optionally tonemaps to 8bit images
     """
 
-    nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
+    nproc = (
+        ctx.parent.params.get("nproc", multiprocessing.cpu_count())
+        if ctx.parent
+        else multiprocessing.cpu_count()
+    )
 
     # Ensure output exists
     if output_path is None:

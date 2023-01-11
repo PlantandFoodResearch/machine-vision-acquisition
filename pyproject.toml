@@ -12,14 +12,14 @@ mva_process = 'machine_vision_acquisition_python.process.cli:cli'
 mva_capture = 'machine_vision_acquisition_python.capture.cli:cli'
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 click = "^8.1.2"
 pydantic = "^1.9.1"
 Flask = "^2.1.2"
 sshkeyboard = "^2.3.1"
 pandas = "^1.4.2"
 openpyxl = "^3.0.10"
-opencv-python-headless = "^4.6.0"
+opencv-python-headless = "^4.5"
 high-res-stereo = {git = "https://github.com/nznobody/high-res-stereo", optional = true}
 
 [tool.poetry.extras]

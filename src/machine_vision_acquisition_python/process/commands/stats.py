@@ -57,7 +57,11 @@ def stats(ctx: click.Context, input_path: Path, output_path: typing.Optional[Pat
     Generate basic numerical stats from folders of images (reccursive) and output xlsx file
     """
 
-    nproc = ctx.parent.params.get("nproc", multiprocessing.cpu_count()) if ctx.parent else multiprocessing.cpu_count()
+    nproc = (
+        ctx.parent.params.get("nproc", multiprocessing.cpu_count())
+        if ctx.parent
+        else multiprocessing.cpu_count()
+    )
 
     # Ensure output exists
     datetime_path = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")

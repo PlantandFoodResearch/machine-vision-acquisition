@@ -83,7 +83,11 @@ def liveview_web(cameras: List[CameraHelper]):
     template_path = web_path / "templates"
     if not template_path.exists():
         raise FileNotFoundError(f"Could not find template folder")
-    app = Flask(__name__, static_folder=str(web_path / "static"), template_folder=str(template_path))
+    app = Flask(
+        __name__,
+        static_folder=str(web_path / "static"),
+        template_folder=str(template_path),
+    )
 
     def gen_frames(camera: CameraHelper):
         while True:

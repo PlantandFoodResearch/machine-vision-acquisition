@@ -231,7 +231,6 @@ class CameraHelper:
         else:
             raise ValueError("Could not start acquisition")
 
-
         # try:
         #     self.camera.software_trigger()
         # except Exception as _:

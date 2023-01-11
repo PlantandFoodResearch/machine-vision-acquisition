@@ -84,7 +84,9 @@ def cli(devices: str, ip_addresses: str, mtu: int):
         device_interface_list.append((connection, ip_interface_actual))
         log.info(f"Reset {connection.name} with {ip_interface_actual}")
         # This is pretty icky, but increments '192.168.1.0/24' -> '192.168.2.0/24'
-        ip_interface_current = ipaddress.IPv4Interface(f"{(ip_interface_current+255).compressed.split('/')[0]}/{ip_interface_current.compressed.split('/')[1]}")
+        ip_interface_current = ipaddress.IPv4Interface(
+            f"{(ip_interface_current+255).compressed.split('/')[0]}/{ip_interface_current.compressed.split('/')[1]}"
+        )
     log.debug("Waiting 10 seconds for connections to settle")
     time.sleep(10.0)
     restart_dhcp(device_interface_list)
@@ -156,11 +158,7 @@ def create_new_dhcpd_conf(device_interface_list):
     file_buffer = ""
     for device, interface in device_interface_list:
         file_buffer += DHCPD_CONF_STUB.format(
-            interface="",
-            netmask="",
-            range_start="",
-            range_stop="",
-            router_ipv4=""
+            interface="", netmask="", range_start="", range_stop="", router_ipv4=""
         )
     with tempfile.NamedTemporaryFile(mode="wt") as tmpfile:
         tmpfile.write(file_buffer)
