@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 from machine_vision_acquisition_python.process.commands.stats import stats
 from machine_vision_acquisition_python.process.commands.convert import convert
 from machine_vision_acquisition_python.process.commands.undistort import undistort
+from machine_vision_acquisition_python.process.commands.calibrate import calib
 
 try:
     from machine_vision_acquisition_python.process.commands.stereo import stereo
@@ -28,7 +29,7 @@ except ModuleNotFoundError as _:
     log.warning("mva_process stereo won't be available, imports failed.")
     stereo = None
 
-_commands = [x for x in [stats, convert, undistort, stereo] if x]
+_commands = [x for x in [stats, convert, undistort, stereo, calib] if x]
 
 _DEFAULT_NPROC = multiprocessing.cpu_count()
 

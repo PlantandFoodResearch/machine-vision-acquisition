@@ -94,14 +94,6 @@ class NumpyEncoder(json.JSONEncoder):
     required=False,
 )
 @click.option(
-    "--single-thread",
-    "-st",
-    "singlethread",
-    is_flag=True,
-    help="Run calibration in single thread only",
-    type=click.types.BOOL,
-)
-@click.option(
     "--stereo-index-regex",
     "-sr",
     "index_regex",
@@ -109,21 +101,32 @@ class NumpyEncoder(json.JSONEncoder):
     type=click.types.STRING,
     default=r"^(\d*?)\D",  # All leading digits until first non-digit
 )
+@click.pass_context
 def calib(
+    ctx: click.Context,
     input_path: Path,
     board_type: str,
     board_rows: int,
     board_columns: int,
     board_checker_size: float,
     input_stereo_path: Optional[Path],
-    singlethread: bool,
     index_regex: str,
 ):
-    """Just another OpenCV Calibration CLI"""
-    if singlethread:
-        threads = 1
-    else:
-        threads = cpu_count()
+    """
+    Just another OpenCV Calibration CLI.
+
+    Takes either a single or dual folders of images and performs a very basic calibration.
+
+    Results (intrinsic and optionally extrinsic matricies) are output into a MVA compatible JSON file.
+    """
+
+    # Get top level nproc thread count.
+    nproc = (
+        ctx.parent.params.get("nproc", cpu_count())
+        if ctx.parent
+        else cpu_count()
+    )
+    
     pattern_size = (board_columns, board_rows)
     single_object_points = generate_checker_board_points(
         board_rows, board_columns, board_checker_size
@@ -135,7 +138,7 @@ def calib(
     # Gather main / left camera
     image_paths, expected_shape = get_image_paths_and_size(input_path)
     image_points, obj_points, image_names = process_images(
-        image_paths, single_object_points, expected_shape, pattern_size, threads
+        image_paths, single_object_points, expected_shape, pattern_size, nproc
     )
     log.info(f"Calibrating {input_path.name} with {len(image_points)} images")
 
@@ -169,7 +172,7 @@ def calib(
             single_object_points,
             expected_shape_stereo,
             pattern_size,
-            threads,
+            nproc,
         )
 
         if len(image_points_stereo) != len(image_points):
