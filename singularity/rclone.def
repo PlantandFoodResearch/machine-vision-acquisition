@@ -1,0 +1,8 @@
+Bootstrap: docker
+From: rclone/rclone
+
+%post
+    # Install bash for nexflow compatibility
+    apk update
+    apk upgrade
+    apk add bash

@@ -21,6 +21,7 @@ services:
       - ${SRC_DIR:-.}:/src
       - ${OUTPUT_DIR:-/media/powerplant-sink/}:/output/
       - "/dev/bus/usb:/dev/bus/usb"  # All USB devices, even when hotplugged
+      - ${INPUT_DIR:-/input/projects/dhs/}:/input/
 
   # This only makes sense if you can locate the Chronoptics SDK
   multi-sdk:
