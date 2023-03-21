@@ -8,6 +8,10 @@ from machine_vision_acquisition_python.calibration.interface import (
 from machine_vision_acquisition_python.calibration.libcalib import (
     load_from_calibio_json,
 )
+from machine_vision_acquisition_python.process.stereo.sparse import (
+    SparseStereoProcessor,
+)
+
 import pytest
 
 # def test_calibration_load_mva():
@@ -43,9 +47,6 @@ import pytest
 
 
 def test_sparse_stereo_general():
-    """
-    Tests
-    """
     calib_path = Path(r"test/data/2022-12-22-BioEng-Calib.json")
     calibs = load_from_calibio_json(calib_path)
     p1_left = (779, 851)  # (x,y)
@@ -56,9 +57,6 @@ def test_sparse_stereo_general():
     p1_right = (837, 837)
     p2_right = (1419, 809)
     p1_p2_mm = (244, 10)  # (dx,dy)
-    from machine_vision_acquisition_python.process.stereo.sparse import (
-        SparseStereoProcessor,
-    )
 
     stereo = SparseStereoProcessor(calibs[0], calibs[1])
 
@@ -73,11 +71,10 @@ def test_sparse_stereo_general():
     )  # Manually confirmed value for this calibration and point
 
     # get distance between points in mm not accounting for twist (z differences)
-    left_points = (
-        np.array([p1_left, p2_left]).reshape(-1, 1, 2).astype(np.float32)
-    )  # Make a 1xN/Nx1 2-channel CV_32FC2 array
-    left_points_undistorted = stereo.undistort_image_points_l(left_points)
-    diff_p1_p2 = np.abs(left_points_undistorted[0] - left_points_undistorted[1])[0]
+    left_points_undistorted = stereo.undistort_image_points(
+        [p1_left, p2_left], left=True
+    )
+    diff_p1_p2 = np.abs(left_points_undistorted[0] - left_points_undistorted[1])
     diff_p1_p2_mm = calibs[0].mm_per_px_at_z(depth_mm) * diff_p1_p2
     assert 242.8 == pytest.approx(
         diff_p1_p2_mm[0], 0.01
@@ -93,6 +90,20 @@ def test_sparse_stereo_general():
     ]  # Make a 1xN/Nx1 3-channel array ready for casting
     left_points_3d = stereo.points_px_to_3d_world_space(left_points)
     diff_3d_p1_p2_mm = left_points_3d[1] - left_points_3d[0]
-    assert np.array([241.31, -12.61, -7.55]) == pytest.approx(
-        diff_3d_p1_p2_mm, 0.01
-    )
+    assert np.array([241.31, -12.61, -7.55]) == pytest.approx(diff_3d_p1_p2_mm, 0.01)
+
+
+def test_stereo_points_to_xyz(sparse_stereo: SparseStereoProcessor):
+    p1_left = (779, 851)  # (x,y)
+    p2_left = (
+        1360,
+        824,
+    )  # Nose to tail fork, 244mm, unknown dy, back estimated (from output)
+    p1_right = (837, 837)
+    p2_right = (1419, 809)
+    p1_p2_mm = (244, 10)  # (dx,dy)
+    p1 = sparse_stereo.stereo_points_to_xyz(p1_left, p1_right)
+    p2 = sparse_stereo.stereo_points_to_xyz(p2_left, p2_right)
+    diff_3d_p1_p2_mm = p2 - p1
+    assert np.array([241.31, -12.61, -7.55]) == pytest.approx(diff_3d_p1_p2_mm, 0.01)
+

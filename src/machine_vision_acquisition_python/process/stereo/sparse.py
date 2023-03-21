@@ -27,8 +27,8 @@ class SparseStereoProcessor(StereoProcessor):
     ) -> None:
         super().__init__(calibration_left, calibration_right)
 
-    def undistort_image_points_l(self, image_points: NDArray) -> NDArray:
-        """Return undistorted points for left camera"""
+    def undistort_image_points(self, image_points: Union[NDArray, List], left: bool) -> NDArray:
+        """Return undistorted points for left/right camera"""
         if self.camera_model == CameraModel.OpenCV:
             function_undistort_points = cv2.undistortPoints
         elif self.camera_model == CameraModel.OpenCVFisheye:
@@ -37,36 +37,33 @@ class SparseStereoProcessor(StereoProcessor):
             raise NotImplementedError(
                 f"Camera model {self.camera_model} not supported (yet!)"
             )
-
-        undistorted_points = function_undistort_points(
-            image_points,
-            self.calibration_left.cameraMatrix,
-            self.calibration_left.distCoeffs,
-            R=self.params.R1,
-            P=self.params.P1,
-        )
-        return undistorted_points
-
-    def undistort_image_points_r(self, image_points: NDArray) -> NDArray:
-        """Return undistorted points for right camera"""
-
-        if self.camera_model == CameraModel.OpenCV:
-            function_undistort_points = cv2.undistortPoints
-        elif self.camera_model == CameraModel.OpenCVFisheye:
-            function_undistort_points = cv2.fisheye.undistortPoints
-        else:
-            raise NotImplementedError(
-                f"Camera model {self.camera_model} not supported (yet!)"
+        
+        # Make a 1xN/Nx1 2-channel CV_32FC2 array from list
+        if isinstance(image_points, list):
+            image_points = (
+                _marshal_point_to_array(image_points).reshape(-1, 1, 2).astype(np.float32)
             )
+        else:
+            # do nothing for now. Could maybe check NDArray shape to ensure compatible?
+            pass
 
-        undistorted_points = function_undistort_points(
-            image_points,
-            self.calibration_right.cameraMatrix,
-            self.calibration_right.distCoeffs,
-            R=self.params.R2,
-            P=self.params.P2,
-        )
-        return undistorted_points
+        if left:
+            undistorted_points = function_undistort_points(
+                image_points,
+                self.calibration_left.cameraMatrix,
+                self.calibration_left.distCoeffs,
+                R=self.params.R1,
+                P=self.params.P1,
+            )
+        else:
+            undistorted_points = function_undistort_points(
+                image_points,
+                self.calibration_right.cameraMatrix,
+                self.calibration_right.distCoeffs,
+                R=self.params.R2,
+                P=self.params.P2,
+            )
+        return np.squeeze(undistorted_points)
 
     def disparity_from_dual_points(
         self,
@@ -75,16 +72,9 @@ class SparseStereoProcessor(StereoProcessor):
         vertical_tolerance_px=10,
     ) -> float:
         """Given two points, return the horizontal disparity in pixel units"""
-        left_points = (
-            _marshal_point_to_array(left_point).reshape(-1, 1, 2).astype(np.float32)
-        )  # Make a 1xN/Nx1 2-channel CV_32FC2 array
-        right_points = (
-            _marshal_point_to_array(right_point).reshape(-1, 1, 2).astype(np.float32)
-        )
-
         # Undistort points
-        left_point_undistorted = self.undistort_image_points_l(left_points)[0][0]
-        right_point_undistorted = self.undistort_image_points_r(right_points)[0][0]
+        left_point_undistorted = self.undistort_image_points(left_point, left=True)
+        right_point_undistorted = self.undistort_image_points(right_point, left=False)
 
         # Disparity in dual dimensions
         disp = left_point_undistorted - right_point_undistorted
@@ -95,3 +85,19 @@ class SparseStereoProcessor(StereoProcessor):
                 f"Pixels are not vertically aligned within tolerance: {disp[1]}"
             )
         return disp[0]
+
+    def stereo_points_to_xyz(
+        self, left_point: Union[NDArray, List], right_point: Union[NDArray, List]
+    ) -> NDArray:
+        """
+        Given a left and right stereo point pair, return the real-world XYZ co-ordinates from the perspective of the left camera.
+
+        *Note*: Input must be in (u,v) pixel form and non-rectified!
+
+        This is mainly a helper function. For more detail, refer to the chained individual called functions.
+        """
+        disp = self.disparity_from_dual_points(left_point, right_point)
+        left_rect_point = self.undistort_image_points(left_point, left=True)
+        left_rect_point = [*left_rect_point, disp]
+        xyz = self.points_px_to_3d_world_space(left_rect_point)
+        return np.squeeze(xyz)
