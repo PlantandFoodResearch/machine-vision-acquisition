@@ -39,7 +39,7 @@ class SparseStereoProcessor(StereoProcessor):
             )
         
         # Make a 1xN/Nx1 2-channel CV_32FC2 array from list
-        if isinstance(image_points, list):
+        if isinstance(image_points, list) or isinstance(image_points, tuple):
             image_points = (
                 _marshal_point_to_array(image_points).reshape(-1, 1, 2).astype(np.float32)
             )
