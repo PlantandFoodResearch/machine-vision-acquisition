@@ -222,7 +222,7 @@ class StereoProcessor:
         """
         Converts point(s) in pixel (u,v,w) space to world space (x,y,z) relative to the 'main' camera.
 
-        Input is expected in undistorted pixel units with 'w' being disparity (in pixels) and only from the 'left/main' camera.
+        Input is expected to be rectified pixel units with 'w' being disparity (in pixels) and only from the 'left/main' camera.
         *Note*: You must undistort the (u,v) values first!
 
         Ouput will be point(s) in mm units relative to the 'left/main' camera with the following coordinate system:
