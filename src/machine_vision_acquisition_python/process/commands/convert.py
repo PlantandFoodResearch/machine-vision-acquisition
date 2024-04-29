@@ -179,6 +179,7 @@ def process_file(
     if image is None or not image.any():
         if skip_broken:
             log.warn(f"Unable to read image {in_path}.")
+            return
         else:
             raise ValueError(f"Failed to read {in_path}")
     image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
