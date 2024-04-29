@@ -46,12 +46,37 @@ log = logging.getLogger(__name__)
 @click.option(
     "--tonemap", "-t", help="Output 8bit tonemapped images", is_flag=True, default=False
 )
+@click.option(
+    "--out-ext",
+    "-e",
+    help="File extension. Defaults to input file extension",
+    default=None,
+)
+@click.option(
+    "--overwrite",
+    help="Whether to overwrite output files. Defaults to false.",
+    is_flag=True,
+)
+@click.option(
+    "--skip-existing",
+    help="Whether to skip existing output files. Defaults to false.",
+    is_flag=True,
+)
+@click.option(
+    "--skip-broken",
+    help="Whether to skip broken images. Defaults to false.",
+    is_flag=True,
+)
 @click.pass_context
 def convert(
     ctx: click.Context,
     input_path: Path,
     output_path: typing.Optional[Path],
     tonemap: bool,
+    out_ext: str = None,
+    overwrite: bool = False,
+    skip_existing: bool = False,
+    skip_broken: bool = False,
 ):
     """
     Batch converts raw 12bit 'PNG' images to de-bayered 12bit images. Optionally tonemaps to 8bit images
@@ -74,14 +99,27 @@ def convert(
     output_path.mkdir(exist_ok=True, parents=True)
 
     # get going
-    process_folder(input_path, output_path, tonemap, nproc=nproc)
+    process_folder(
+        input_path=input_path,
+        output_path=output_path,
+        nproc=nproc,
+        tonemap=tonemap,
+        out_ext=out_ext,
+        overwrite=overwrite,
+        skip_existing=skip_existing,
+        skip_broken=skip_broken,
+    )
 
 
 def process_folder(
     input_path: Path,
     output_path: Path,
-    tonemap: bool,
     nproc: int = multiprocessing.cpu_count(),
+    tonemap: bool = False,
+    out_ext: str = None,
+    overwrite: bool = False,
+    skip_existing: bool = False,
+    skip_broken: bool = False,
 ):
     # delayed import to avoid circular dependency but allow global nproc
     process_args = []
@@ -89,7 +127,17 @@ def process_folder(
     for file_path in input_path.rglob("*.png"):
         out_dir = output_path / file_path.parent.relative_to(input_path)
         out_dir.mkdir(parents=True, exist_ok=True)
-        process_args.append((file_path.resolve(), out_dir.resolve(), tonemap))
+        process_args.append(
+            (
+                file_path.resolve(),
+                out_dir.resolve(),
+                tonemap,
+                out_ext,
+                overwrite,
+                skip_existing,
+                skip_broken,
+            )
+        )
 
     # Multiprocess
     pool = multiprocessing.Pool(processes=nproc)
@@ -105,16 +153,35 @@ def process_folder(
         pool.join()
 
 
-def process_file(in_path: Path, out_dir: Path, tonemap: bool):
+def process_file(
+    in_path: Path,
+    out_dir: Path,
+    tonemap: bool = False,
+    out_ext: str = None,
+    overwrite: bool = False,
+    skip_existing: bool = False,
+    skip_broken: bool = False,
+):
     """
     Multoprocessing entrypoint for doing the grunt work
     """
     tonemap_path = ".tonemapped" if tonemap else ""
-    out_path = out_dir / f"{in_path.stem}{tonemap_path}{in_path.suffix}"
+    out_ext = in_path.suffix if out_ext is None else f".{out_ext.lstrip('.')}"
+    out_path = out_dir / f"{in_path.stem}{tonemap_path}{out_ext}"
+    if out_path.is_file():
+        if skip_existing:
+            return
+        elif overwrite != True:
+            raise FileExistsError(out_path)
     log.debug(f"Processing {in_path} to {out_path}")
+
     image = cv2.imread(str(in_path), cv2.IMREAD_ANYDEPTH)
     if image is None or not image.any():
-        raise ValueError(f"Failed to read {in_path}")
+        if skip_broken:
+            log.warn(f"Unable to read image {in_path}.")
+            return
+        else:
+            raise ValueError(f"Failed to read {in_path}")
     image = cv2.cvtColor(image, cv2.COLOR_BayerRG2RGB)
     if tonemap:
         image = cvt_tonemap_image(image)
