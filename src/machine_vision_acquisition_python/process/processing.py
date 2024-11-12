@@ -34,7 +34,7 @@ def buffer_to_numpy_8bit(raw_data_ptr, height: int, width: int):
 
 def cvt_tonemap_image(image: cv2.Mat) -> cv2.Mat:
     image_f32 = image.astype(np.float32)
-    tonemap = cv2.createTonemapReinhard()
+    tonemap = cv2.createTonemapReinhard(0.8, 1.0, 1.0, 0)
     image_f32_tonemap = tonemap.process(image_f32)
     # Todo: address https://github.com/opencv/opencv/issues/16739
     image_uint8 = np.uint8(
