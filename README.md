@@ -1,3 +1,5 @@
+## Archiving as repo no longer in active use or being supported
+Note stereo camera utility has been moved to https://github.com/PlantandFoodResearch/stereo-utility
 # Machine Vision Acquisition
 This repository is a lose grouping of code, environments, scripts, notes, and more capturing efforts relating to acquiring images from machine vision cameras such as those from Lucid. Predominantly this will focus on GenICam as an interface layer and utilise [Aravis](https://github.com/AravisProject/aravis).
 
